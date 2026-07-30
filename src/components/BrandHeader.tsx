@@ -11,7 +11,7 @@ export function BrandHeader({
 
   return (
     <div className="brand-chrome">
-      {/* Franja institucional gob.pe */}
+      {/* Franja roja: fondo de borde a borde */}
       <div className="gov-topbar">
         <div className="gov-topbar-inner">
           <a
@@ -40,48 +40,52 @@ export function BrandHeader({
         </div>
       </div>
 
-      {/* Cabecera OSIPTEL — compacta en móvil */}
-      <header className="inst-header">
-        <div className="inst-header-inner">
-          <a
-            className="inst-logo-link"
-            href={BRAND.urls.institution}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={BRAND.fullName}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={BRAND.assets.osiptelLogo}
-              alt={`Logo ${BRAND.name}`}
-              className="inst-logo"
-            />
-          </a>
+      {/* Banda blanca: fondo de borde a borde; contenido con padding */}
+      <div className="inst-header-band">
+        <header className="inst-header">
+          <div className="inst-header-inner">
+            <a
+              className="inst-logo-link"
+              href={BRAND.urls.institution}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={BRAND.fullName}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={BRAND.assets.osiptelLogo}
+                alt={`Logo ${BRAND.name}`}
+                className="inst-logo"
+              />
+            </a>
 
-          <div className="inst-title-block">
-            <p className="inst-kicker">{BRAND.name}</p>
-            <h1 className="inst-title">{BRAND.productName}</h1>
-            <p className="inst-subtitle desktop-only">{BRAND.productSubtitle}</p>
+            <div className="inst-title-block">
+              <p className="inst-kicker">{BRAND.name}</p>
+              <h1 className="inst-title">{BRAND.productName}</h1>
+              <p className="inst-subtitle desktop-only">
+                {BRAND.productSubtitle}
+              </p>
+            </div>
+
+            <div className="inst-badges desktop-only">
+              <span className="inst-badge">MVP regulatorio</span>
+              <span className="inst-badge inst-badge-soft">CVM 70%</span>
+              <span className="inst-badge inst-badge-soft">{mode}</span>
+            </div>
           </div>
-
-          <div className="inst-badges desktop-only">
-            <span className="inst-badge">MVP regulatorio</span>
+          <p className="inst-tagline desktop-only">{BRAND.tagline}</p>
+          <div className="inst-badges mobile-only inst-badges-mobile">
             <span className="inst-badge inst-badge-soft">CVM 70%</span>
-            <span className="inst-badge inst-badge-soft">{mode}</span>
+            <span
+              className={`inst-badge inst-badge-soft ${
+                accessKind === "cellular" ? "inst-badge-mobile" : ""
+              }`}
+            >
+              {mode}
+            </span>
           </div>
-        </div>
-        <p className="inst-tagline desktop-only">{BRAND.tagline}</p>
-        <div className="inst-badges mobile-only inst-badges-mobile">
-          <span className="inst-badge inst-badge-soft">CVM 70%</span>
-          <span
-            className={`inst-badge inst-badge-soft ${
-              accessKind === "cellular" ? "inst-badge-mobile" : ""
-            }`}
-          >
-            {mode}
-          </span>
-        </div>
-      </header>
+        </header>
+      </div>
     </div>
   );
 }
