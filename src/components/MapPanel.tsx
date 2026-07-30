@@ -82,6 +82,17 @@ export function MapPanel({
           )}
         </p>
 
+        {usingGoogle && (
+          <div className="info-box" style={{ marginBottom: 12, fontSize: 13 }}>
+            Si ves <em>“not authorized to use this API key”</em> en Android:
+            en Google Cloud la key debe ser de tipo <strong>Sitios web (HTTP
+            referrers)</strong>, no “Aplicaciones Android”, e incluir{" "}
+            <code>https://medidor-velocidad-pi.vercel.app/*</code> y{" "}
+            <code>http://localhost:3000/*</code>. Activa también{" "}
+            <strong>Maps Embed API</strong>. Espera 1–5 min tras guardar.
+          </div>
+        )}
+
         {error && <div className="error-box">{error}</div>}
 
         {geo ? (
