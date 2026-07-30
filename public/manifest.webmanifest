@@ -11,6 +11,12 @@
   "categories": ["utilities", "productivity"],
   "icons": [
     {
+      "src": "/brand/splash.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
       "src": "/brand/escudo-peru.png",
       "sizes": "192x192",
       "type": "image/png",

@@ -6,6 +6,7 @@ import { BrandFooter } from "@/components/BrandFooter";
 import { BrandHeader } from "@/components/BrandHeader";
 import { MapPanel } from "@/components/MapPanel";
 import { Sparkline } from "@/components/Sparkline";
+import { SplashScreen } from "@/components/SplashScreen";
 import type { DeviceGeo } from "@/lib/geo";
 import { getDevicePosition } from "@/lib/geo";
 import {
@@ -110,10 +111,13 @@ export function SpeedTestApp() {
   const [liveAccess, setLiveAccess] = useState<NetworkAccessKind>("unknown");
   const [liveIsp, setLiveIsp] = useState<IspIdentity | null>(null);
   const [ispLoading, setIspLoading] = useState(true);
-  /** Número de repeticiones de la prueba (1–10) */
+  /** Número de repeticiones de la prueba (1–10) — valor efectivo */
   const [reps, setReps] = useState(1);
+  /** Texto del input (permite borrar y reescribir) */
+  const [repsText, setRepsText] = useState("1");
   const [repProgress, setRepProgress] = useState({ current: 0, total: 0 });
   const [deviceGeo, setDeviceGeo] = useState<DeviceGeo | null>(null);
+  const [splashDone, setSplashDone] = useState(false);
 
   useEffect(() => {
     setPlan(loadPlan());
@@ -127,6 +131,7 @@ export function SpeedTestApp() {
       if (r) {
         const n = Math.min(10, Math.max(1, Number(r) || 1));
         setReps(n);
+        setRepsText(String(n));
       }
     } catch {
       /* ignore */
@@ -533,6 +538,9 @@ export function SpeedTestApp() {
 
   return (
     <>
+      {!splashDone && (
+        <SplashScreen onDone={() => setSplashDone(true)} />
+      )}
       <BrandHeader accessKind={liveAccess} />
       <div
         className={`app ${running ? "is-running" : ""} ${
@@ -749,24 +757,36 @@ export function SpeedTestApp() {
             >
               <div className="measure-card-head">
                 <h2>Medición</h2>
-                <label className="reps-control" title="Repeticiones de la prueba">
+                <label className="reps-control" title="Repeticiones (1–10)">
                   <span className="reps-label">×</span>
                   <input
-                    type="number"
+                    type="text"
                     className="reps-input"
-                    min={1}
-                    max={10}
-                    step={1}
                     inputMode="numeric"
-                    value={reps}
+                    pattern="[0-9]*"
+                    maxLength={2}
+                    value={repsText}
                     disabled={running}
-                    aria-label="Número de repeticiones"
+                    aria-label="Número de repeticiones (1 a 10)"
                     onChange={(e) => {
-                      const n = Math.min(
-                        10,
-                        Math.max(1, Number(e.target.value) || 1)
-                      );
+                      // Solo dígitos; permite vacío mientras escribe
+                      const raw = e.target.value.replace(/\D/g, "").slice(0, 2);
+                      setRepsText(raw);
+                      if (raw === "") return;
+                      const n = Number(raw);
+                      if (Number.isFinite(n) && n >= 1 && n <= 10) {
+                        setReps(n);
+                      }
+                    }}
+                    onBlur={() => {
+                      let n = Number(repsText);
+                      if (!Number.isFinite(n) || n < 1) n = 1;
+                      if (n > 10) n = 10;
                       setReps(n);
+                      setRepsText(String(n));
+                    }}
+                    onFocus={(e) => {
+                      e.target.select();
                     }}
                   />
                 </label>
