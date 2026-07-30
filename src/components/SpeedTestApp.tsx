@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AggregatesPanel } from "@/components/AggregatesPanel";
 import { BrandFooter } from "@/components/BrandFooter";
 import { BrandHeader } from "@/components/BrandHeader";
 import { AdminPanel } from "@/components/AdminPanel";
+import { GpsConsentModal } from "@/components/GpsConsentModal";
 import { MapPanel } from "@/components/MapPanel";
 import { Sparkline } from "@/components/Sparkline";
 import { SplashScreen } from "@/components/SplashScreen";
@@ -159,6 +160,8 @@ export function SpeedTestApp() {
   const [deviceGeo, setDeviceGeo] = useState<DeviceGeo | null>(null);
   const [splashDone, setSplashDone] = useState(false);
   const [gpsConsent, setGpsConsent] = useState<GpsConsent>(null);
+  const [gpsModalOpen, setGpsModalOpen] = useState(false);
+  const pendingMeasureRef = useRef(false);
 
   useEffect(() => {
     setPlan(loadPlan());
@@ -312,6 +315,27 @@ export function SpeedTestApp() {
     }
   }
 
+  function handleGpsGrant() {
+    saveGpsConsent("granted");
+    setGpsConsent("granted");
+    setGpsModalOpen(false);
+    if (pendingMeasureRef.current) {
+      pendingMeasureRef.current = false;
+      void runMeasurement("granted");
+    }
+  }
+
+  function handleGpsDeny() {
+    saveGpsConsent("denied");
+    setGpsConsent("denied");
+    setGpsModalOpen(false);
+    // Sin GPS: continúa la medición automáticamente
+    if (pendingMeasureRef.current) {
+      pendingMeasureRef.current = false;
+      void runMeasurement("denied");
+    }
+  }
+
   async function start() {
     if (running) return;
     const refDown = referenceDownMbps(plan);
@@ -324,23 +348,20 @@ export function SpeedTestApp() {
       return;
     }
 
-    // Consentimiento GPS obligatorio antes de medir
+    // Primera vez: modal flotante. Si ya eligió, sigue con esa preferencia.
     const consent = gpsConsent ?? loadGpsConsent();
     if (consent === null) {
-      setError(
-        "Primero elige si autorizas la ubicación GPS (cuadro debajo del medidor)."
-      );
-      try {
-        document.getElementById("gps-consent")?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-      } catch {
-        /* ignore */
-      }
+      pendingMeasureRef.current = true;
+      setGpsModalOpen(true);
+      setError(null);
       return;
     }
 
+    await runMeasurement(consent);
+  }
+
+  async function runMeasurement(consent: "granted" | "denied") {
+    if (running) return;
     const total = Math.min(10, Math.max(1, reps));
     setError(null);
     setInfo(null);
@@ -703,6 +724,11 @@ export function SpeedTestApp() {
       {!splashDone && (
         <SplashScreen onDone={() => setSplashDone(true)} />
       )}
+      <GpsConsentModal
+        open={gpsModalOpen}
+        onGrant={handleGpsGrant}
+        onDeny={handleGpsDeny}
+      />
       <BrandHeader accessKind={liveAccess} />
       <div
         className={`app ${running ? "is-running" : ""} ${
@@ -1040,69 +1066,28 @@ export function SpeedTestApp() {
               </div>
               <div className="status-line">{progress.message}</div>
 
-              {/* Consentimiento GPS explícito */}
-              <div
-                id="gps-consent"
-                className={`gps-consent ${
-                  gpsConsent === null
-                    ? "gps-consent-pending"
-                    : gpsConsent === "granted"
-                      ? "gps-consent-ok"
-                      : "gps-consent-no"
-                }`}
-              >
-                <div className="gps-consent-title">Ubicación GPS</div>
-                <p className="gps-consent-text">
-                  ¿Autorizas capturar la <strong>ubicación del dispositivo</strong>{" "}
-                  (lat/long) junto a cada medición? Se usa solo para el registro y el
-                  mapa. Puedes cambiar la decisión cuando quieras.
-                </p>
-                <div className="gps-consent-actions">
+              {/* Preferencia GPS compacta (cambiar sin bloquear) */}
+              {gpsConsent != null && (
+                <div className="gps-pref-chip">
+                  <span>
+                    GPS:{" "}
+                    <strong>
+                      {gpsConsent === "granted" ? "autorizado" : "desactivado"}
+                    </strong>
+                  </span>
                   <button
                     type="button"
-                    className={`btn btn-touch ${
-                      gpsConsent === "granted" ? "btn-secondary" : "btn-ghost"
-                    }`}
+                    className="btn btn-ghost btn-touch"
                     disabled={running}
                     onClick={() => {
-                      saveGpsConsent("granted");
-                      setGpsConsent("granted");
-                      setError(null);
+                      pendingMeasureRef.current = false;
+                      setGpsModalOpen(true);
                     }}
                   >
-                    Autorizar GPS
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn btn-touch ${
-                      gpsConsent === "denied" ? "btn-secondary" : "btn-ghost"
-                    }`}
-                    disabled={running}
-                    onClick={() => {
-                      saveGpsConsent("denied");
-                      setGpsConsent("denied");
-                      setError(null);
-                    }}
-                  >
-                    Continuar sin GPS
+                    Cambiar
                   </button>
                 </div>
-                {gpsConsent === "granted" && (
-                  <p className="field-hint" style={{ marginTop: 6 }}>
-                    GPS autorizado. El navegador puede pedir permiso del sistema.
-                  </p>
-                )}
-                {gpsConsent === "denied" && (
-                  <p className="field-hint" style={{ marginTop: 6 }}>
-                    Sin coordenadas en esta sesión (puedes autorizar más tarde).
-                  </p>
-                )}
-                {gpsConsent === null && (
-                  <p className="field-hint warn" style={{ marginTop: 6 }}>
-                    Elige una opción antes de iniciar la medición.
-                  </p>
-                )}
-              </div>
+              )}
 
               <div id="results-anchor" />
               {error && <div className="error-box">{error}</div>}

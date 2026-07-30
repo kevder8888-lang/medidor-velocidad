@@ -11,8 +11,10 @@ import { formatMbps, formatMs } from "@/lib/stats";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 import { fetchAllMeasurements } from "@/lib/supabase/measurements";
 import {
+  downloadXlsx,
   measurementsToEnrichedCsv,
   measurementsToEnrichedJson,
+  measurementsToEnrichedXlsx,
 } from "@/lib/exportReport";
 import type { MeasurementRow } from "@/lib/supabase/types";
 import type { Session } from "@supabase/supabase-js";
@@ -287,6 +289,20 @@ export function AdminPanel() {
             </button>
             <button
               type="button"
+              className="btn btn-secondary btn-touch"
+              onClick={() =>
+                downloadXlsx(
+                  `informe-mediciones-${new Date().toISOString().slice(0, 10)}.xlsx`,
+                  measurementsToEnrichedXlsx(filtered)
+                )
+              }
+              disabled={!filtered.length}
+              title="Excel .xlsx con columnas de informe"
+            >
+              Excel
+            </button>
+            <button
+              type="button"
               className="btn btn-ghost btn-touch"
               onClick={() =>
                 downloadBlob(
@@ -296,9 +312,9 @@ export function AdminPanel() {
                 )
               }
               disabled={!filtered.length}
-              title="CSV con columnas fijas para Excel / informe"
+              title="CSV con columnas fijas"
             >
-              CSV informe
+              CSV
             </button>
             <button
               type="button"
@@ -311,9 +327,9 @@ export function AdminPanel() {
                 )
               }
               disabled={!filtered.length}
-              title="JSON estructurado para sistemas"
+              title="JSON estructurado"
             >
-              JSON informe
+              JSON
             </button>
             <button
               type="button"

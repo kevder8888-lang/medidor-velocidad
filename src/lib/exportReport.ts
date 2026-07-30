@@ -126,3 +126,57 @@ export function measurementsToEnrichedJson(rows: MeasurementRow[]): string {
     2
   );
 }
+
+/** Excel .xlsx enriquecido (abre bien en Excel / LibreOffice). */
+export function measurementsToEnrichedXlsx(rows: MeasurementRow[]): ArrayBuffer {
+  // Dynamic require keeps types light; package: xlsx
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const XLSX = require("xlsx") as typeof import("xlsx");
+
+  const data = rows.map((r) => {
+    const row = measurementToReportRow(r);
+    const out: Record<string, string | number | boolean | null> = {};
+    for (const h of REPORT_HEADERS) {
+      out[h] = row[h];
+    }
+    return out;
+  });
+
+  const sheet = XLSX.utils.json_to_sheet(data, {
+    header: [...REPORT_HEADERS],
+  });
+
+  // Anchos de columna aproximados
+  sheet["!cols"] = REPORT_HEADERS.map((h) => ({
+    wch: Math.min(28, Math.max(12, h.length + 2)),
+  }));
+
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, "Mediciones");
+
+  // Meta sheet
+  const meta = XLSX.utils.aoa_to_sheet([
+    ["Informe mediciones OSIPTEL"],
+    ["Exportado", new Date().toISOString()],
+    ["Filas", rows.length],
+    ["Columnas", REPORT_HEADERS.join(", ")],
+  ]);
+  XLSX.utils.book_append_sheet(book, meta, "Meta");
+
+  const out = XLSX.write(book, { bookType: "xlsx", type: "array" }) as number[];
+  return new Uint8Array(out).buffer;
+}
+
+export function downloadXlsx(filename: string, buffer: ArrayBuffer): void {
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}

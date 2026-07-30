@@ -1845,50 +1845,76 @@ code {
   font-size: 0.85em;
 }
 
-/* Consentimiento GPS */
-.gps-consent {
-  margin-top: 14px;
-  padding: 12px 14px;
-  border-radius: 12px;
+/* Modal flotante GPS */
+.gps-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  background: rgba(10, 22, 40, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.gps-modal-card {
+  width: min(100%, 400px);
+  background: #fff;
+  border-radius: 18px;
+  padding: 22px 20px 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
   border: 1px solid var(--border);
-  background: #fbfcfe;
 }
 
-.gps-consent-pending {
-  border-color: rgba(196, 127, 0, 0.45);
-  background: #fff8e8;
+.gps-modal-title {
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+  color: var(--osiptel-blue-dark);
 }
 
-.gps-consent-ok {
-  border-color: rgba(27, 157, 107, 0.35);
-  background: rgba(27, 157, 107, 0.06);
+.gps-modal-text {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
 }
 
-.gps-consent-no {
-  border-color: var(--border);
-  background: #f4f6f8;
-}
-
-.gps-consent-title {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--osiptel-blue);
-  margin-bottom: 6px;
-}
-
-.gps-consent-text {
+.gps-modal-hint {
+  margin: 0 0 16px;
   font-size: 13px;
   color: var(--text-muted);
   line-height: 1.45;
-  margin: 0 0 10px;
 }
 
-.gps-consent-actions {
-  display: flex;
-  flex-wrap: wrap;
+.gps-modal-actions {
+  display: grid;
   gap: 8px;
+}
+
+.gps-modal-actions .btn-primary {
+  width: 100%;
+}
+
+.gps-pref-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--osiptel-surface);
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.gps-pref-chip .btn {
+  padding: 4px 10px !important;
+  min-height: 32px !important;
+  font-size: 12px !important;
 }
 
 /* Admin */
