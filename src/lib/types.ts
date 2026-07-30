@@ -9,13 +9,15 @@ export type TestPhase =
   | "done"
   | "error";
 
-export type AccessType = "ethernet" | "wifi" | "unknown";
+export type AccessType = "ethernet" | "wifi" | "cellular" | "unknown";
 
 export type ServerKind = "internet" | "self_hosted" | "custom";
 
 export interface PreCheckResult {
   online: boolean;
   connectionType: AccessType;
+  /** Raw Network Information API type string */
+  networkTypeRaw: string | null;
   effectiveType: string | null;
   downlinkMbpsHint: number | null;
   rttHintMs: number | null;
@@ -27,6 +29,8 @@ export interface PreCheckResult {
   timestamp: string;
   pageOrigin: string;
   isLocalhostApp: boolean;
+  isAndroid: boolean;
+  isMobileUa: boolean;
 }
 
 export interface LatencyResult {
@@ -99,6 +103,33 @@ export interface ServerMetaInfo {
   raw?: Record<string, unknown>;
 }
 
+/** ISP / operator identity derived from public IP + network type */
+export interface NetworkIdentity {
+  access: "ethernet" | "wifi" | "cellular" | "unknown";
+  accessLabel: string;
+  isp: {
+    brand: string | null;
+    organization: string | null;
+    asn: number | null;
+    clientIp: string | null;
+    country: string | null;
+    city: string | null;
+    colo: string | null;
+    source: string;
+    category: string;
+    displayName: string;
+    confidence: "alta" | "media" | "baja";
+    notes: string[];
+  };
+  /** True when we believe this is mobile data path */
+  likelyMobileData: boolean;
+  /** True when Wi‑Fi (home ISP ≠ SIM) */
+  likelyWifi: boolean;
+  /** Can we read SIM MCC/MNC? Always false on web */
+  simReadable: false;
+  disclaimer: string;
+}
+
 export interface ResultSignature {
   algorithm: "SHA-256";
   hash: string;
@@ -122,6 +153,7 @@ export interface SpeedTestResult {
   };
   serverProbes: ServerProbe[];
   serverMeta: ServerMetaInfo | null;
+  networkIdentity: NetworkIdentity | null;
   plan: UserPlan;
   latency: LatencyResult;
   download: ThroughputResult;

@@ -24,7 +24,18 @@ import {
   exportResultJson,
   exportResultPdf,
 } from "@/lib/pdfExport";
+import {
+  accessKindLabel,
+  categoryLabel,
+  fetchIspMeta,
+  identifyFromMeta,
+  mapAccessKind,
+  suggestOperatorName,
+  type IspIdentity,
+  type NetworkAccessKind,
+} from "@/lib/isp";
 import { isAndroid, releaseWakeLock, requestWakeLock } from "@/lib/mobile";
+import { runPrecheck } from "@/lib/precheck";
 import { shortHash } from "@/lib/signature";
 import { formatMbps, formatMs } from "@/lib/stats";
 import type {
@@ -90,6 +101,9 @@ export function SpeedTestApp() {
   const [tab, setTab] = useState<TabId>("medir");
   const [android, setAndroid] = useState(false);
   const [planOpen, setPlanOpen] = useState(true);
+  const [liveAccess, setLiveAccess] = useState<NetworkAccessKind>("unknown");
+  const [liveIsp, setLiveIsp] = useState<IspIdentity | null>(null);
+  const [ispLoading, setIspLoading] = useState(true);
 
   useEffect(() => {
     setPlan(loadPlan());
@@ -102,6 +116,30 @@ export function SpeedTestApp() {
     } catch {
       /* ignore */
     }
+
+    // Detect access type + ISP as soon as the app opens (no need to wait for a test)
+    void (async () => {
+      setIspLoading(true);
+      try {
+        const pre = await runPrecheck();
+        const access = mapAccessKind(pre.connectionType, pre.networkTypeRaw);
+        setLiveAccess(access);
+        const meta = await fetchIspMeta();
+        const isp = identifyFromMeta(meta, access);
+        setLiveIsp(isp);
+        // Auto-fill operator only if the user left it empty
+        const suggested = suggestOperatorName(isp);
+        if (suggested) {
+          setPlan((p) =>
+            p.operator?.trim() ? p : { ...p, operator: suggested }
+          );
+        }
+      } catch {
+        /* ignore */
+      } finally {
+        setIspLoading(false);
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -215,6 +253,44 @@ export function SpeedTestApp() {
       );
       setResult(res);
       setProbes(res.serverProbes ?? []);
+      if (res.networkIdentity) {
+        setLiveAccess(res.networkIdentity.access);
+        setLiveIsp({
+          brand: res.networkIdentity.isp.brand,
+          organization: res.networkIdentity.isp.organization,
+          asn: res.networkIdentity.isp.asn,
+          clientIp: res.networkIdentity.isp.clientIp,
+          country: res.networkIdentity.isp.country,
+          city: res.networkIdentity.isp.city,
+          colo: res.networkIdentity.isp.colo,
+          source: res.networkIdentity.isp.source as IspIdentity["source"],
+          category: res.networkIdentity.isp
+            .category as IspIdentity["category"],
+          displayName: res.networkIdentity.isp.displayName,
+          confidence: res.networkIdentity.isp.confidence,
+          notes: res.networkIdentity.isp.notes,
+        });
+        const suggested = suggestOperatorName({
+          brand: res.networkIdentity.isp.brand,
+          organization: res.networkIdentity.isp.organization,
+          asn: res.networkIdentity.isp.asn,
+          clientIp: res.networkIdentity.isp.clientIp,
+          country: res.networkIdentity.isp.country,
+          city: res.networkIdentity.isp.city,
+          colo: res.networkIdentity.isp.colo,
+          source: res.networkIdentity.isp.source as IspIdentity["source"],
+          category: res.networkIdentity.isp
+            .category as IspIdentity["category"],
+          displayName: res.networkIdentity.isp.displayName,
+          confidence: res.networkIdentity.isp.confidence,
+          notes: res.networkIdentity.isp.notes,
+        });
+        if (suggested) {
+          setPlan((p) =>
+            p.operator?.trim() ? p : { ...p, operator: suggested }
+          );
+        }
+      }
       const saved = saveResult(res);
       setHistory(saved.history);
       if (!saved.ok) {
@@ -275,19 +351,125 @@ export function SpeedTestApp() {
       >
         {android && (
           <div className="android-tip" role="note">
-            <strong>Android:</strong> usa Wi‑Fi 5 GHz si puedes, cierra descargas
-            y apps en segundo plano. Deja la pantalla encendida (~30 s). Puedes
-            «Añadir a pantalla de inicio» desde el menú del navegador.
+            <strong>Android:</strong>{" "}
+            {liveAccess === "cellular" ? (
+              <>
+                estás en <strong>datos móviles</strong> — el operador se estima
+                por IP (no por SIM). Cierra apps y deja la pantalla encendida.
+              </>
+            ) : liveAccess === "wifi" ? (
+              <>
+                estás en <strong>Wi‑Fi</strong> (ISP del hogar). Para medir y
+                detectar el operador móvil, desactiva Wi‑Fi y usa solo datos.
+              </>
+            ) : (
+              <>
+                cierra descargas y apps en segundo plano. Deja la pantalla
+                encendida (~30 s). Puedes «Añadir a pantalla de inicio».
+              </>
+            )}
           </div>
         )}
 
         <div className="meta-chips meta-chips-scroll" aria-label="Metadatos">
           <span className="chip">CVM {CVM_THRESHOLD_PCT}%</span>
-          <span className="chip">{selectedServerLabel}</span>
-          <span className="chip desktop-only">Protocolo {PROTOCOL_VERSION}</span>
-          <span className="chip desktop-only">Cliente {CLIENT_VERSION}</span>
+          <span className="chip chip-isp">
+            {ispLoading
+              ? "Detectando red…"
+              : liveIsp
+                ? `${liveAccess === "cellular" ? "Operador" : "ISP"}: ${liveIsp.displayName}`
+                : "ISP: —"}
+          </span>
+          <span className="chip">{accessKindLabel(liveAccess)}</span>
+          <span className="chip desktop-only">{selectedServerLabel}</span>
           <span className="chip">Historial: {history.length}</span>
         </div>
+
+        {/* Tarjeta ISP / operador (visible sin medir) */}
+        <section className="card isp-card" aria-live="polite">
+          <h2>Red e ISP detectados</h2>
+          {ispLoading && !liveIsp ? (
+            <p className="muted-p">Identificando IP pública y proveedor…</p>
+          ) : (
+            <>
+              <div className="isp-hero">
+                <div>
+                  <div className="isp-label">
+                    {liveAccess === "cellular"
+                      ? "Operador estimado (datos móviles)"
+                      : liveAccess === "wifi"
+                        ? "ISP de la red Wi‑Fi"
+                        : "ISP / proveedor"}
+                  </div>
+                  <div className="isp-name">
+                    {liveIsp?.displayName ?? "No identificado"}
+                  </div>
+                  <div className="isp-sub">
+                    {liveIsp
+                      ? categoryLabel(liveIsp.category)
+                      : "Sin datos de ASN"}
+                    {liveIsp?.confidence
+                      ? ` · confianza ${liveIsp.confidence}`
+                      : ""}
+                  </div>
+                </div>
+                <span
+                  className={`pill ${
+                    liveAccess === "cellular"
+                      ? "media"
+                      : liveAccess === "wifi"
+                        ? "media"
+                        : "alta"
+                  }`}
+                >
+                  {accessKindLabel(liveAccess)}
+                </span>
+              </div>
+              <div className="kv">
+                <div className="kv-row">
+                  <span className="k">Organización (ASN)</span>
+                  <span className="v">
+                    {liveIsp?.organization || "—"}
+                    {liveIsp?.asn != null ? ` · AS${liveIsp.asn}` : ""}
+                  </span>
+                </div>
+                <div className="kv-row">
+                  <span className="k">IP pública</span>
+                  <span className="v mono">{liveIsp?.clientIp || "—"}</span>
+                </div>
+                <div className="kv-row">
+                  <span className="k">Ubicación aprox.</span>
+                  <span className="v">
+                    {[liveIsp?.city, liveIsp?.country, liveIsp?.colo && `PoP ${liveIsp.colo}`]
+                      .filter(Boolean)
+                      .join(" · ") || "—"}
+                  </span>
+                </div>
+              </div>
+              <p className="field-hint" style={{ marginTop: 10 }}>
+                {liveAccess === "cellular" ? (
+                  <>
+                    En <strong>datos móviles</strong> el medidor estima el
+                    operador por la IP pública (ASN).{" "}
+                    <strong>No puede leer el nombre de la SIM</strong> desde el
+                    navegador (restricción de Android/Chrome).
+                  </>
+                ) : liveAccess === "wifi" ? (
+                  <>
+                    En <strong>Wi‑Fi</strong> se identifica el ISP del router
+                    (hogar/trabajo), <strong>no</strong> el operador de la SIM.
+                    Desactiva Wi‑Fi para medir y detectar la red móvil.
+                  </>
+                ) : (
+                  <>
+                    El ISP se obtiene de la IP pública. Si usas VPN, verás el
+                    proveedor de la VPN y no tu operador real.
+                  </>
+                )}
+              </p>
+            </>
+          )}
+        </section>
 
         {/* Tabs desktop; en móvil se usa bottom nav */}
         <div className="tabs tabs-desktop">
@@ -833,22 +1015,38 @@ export function SpeedTestApp() {
                       <div className="kv-row">
                         <span className="k">Acceso reportado</span>
                         <span className="v">
-                          {result.precheck?.connectionType ?? "—"}
+                          {result.networkIdentity?.accessLabel ??
+                            result.precheck?.connectionType ??
+                            "—"}
                         </span>
                       </div>
-                      {result.serverMeta && (
+                      <div className="kv-row">
+                        <span className="k">ISP / operador</span>
+                        <span className="v">
+                          {result.networkIdentity?.isp.displayName ??
+                            result.serverMeta?.asOrganization ??
+                            "—"}
+                        </span>
+                      </div>
+                      {(result.networkIdentity?.isp.asn != null ||
+                        result.serverMeta?.asn != null) && (
                         <div className="kv-row">
-                          <span className="k">Meta red</span>
+                          <span className="k">ASN</span>
                           <span className="v">
-                            {[
-                              result.serverMeta.colo &&
-                                `PoP ${result.serverMeta.colo}`,
-                              result.serverMeta.city,
-                              result.serverMeta.asn &&
-                                `AS${result.serverMeta.asn}`,
-                            ]
-                              .filter(Boolean)
-                              .join(" · ") || "—"}
+                            AS
+                            {result.networkIdentity?.isp.asn ??
+                              result.serverMeta?.asn}
+                            {result.networkIdentity?.isp.organization
+                              ? ` · ${result.networkIdentity.isp.organization}`
+                              : ""}
+                          </span>
+                        </div>
+                      )}
+                      {result.networkIdentity?.isp.clientIp && (
+                        <div className="kv-row">
+                          <span className="k">IP pública</span>
+                          <span className="v mono">
+                            {result.networkIdentity.isp.clientIp}
                           </span>
                         </div>
                       )}

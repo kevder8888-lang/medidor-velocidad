@@ -50,6 +50,7 @@ function emptyPrecheck(): PreCheckResult {
   return {
     online: true,
     connectionType: "unknown",
+    networkTypeRaw: null,
     effectiveType: null,
     downlinkMbpsHint: null,
     rttHintMs: null,
@@ -61,6 +62,8 @@ function emptyPrecheck(): PreCheckResult {
     timestamp: new Date().toISOString(),
     pageOrigin: "",
     isLocalhostApp: false,
+    isAndroid: false,
+    isMobileUa: false,
   };
 }
 
@@ -148,6 +151,7 @@ export function normalizeResult(raw: unknown): SpeedTestResult | null {
     },
     serverProbes: Array.isArray(r.serverProbes) ? r.serverProbes : [],
     serverMeta: r.serverMeta ?? null,
+    networkIdentity: r.networkIdentity ?? null,
     plan: {
       ...emptyPlan(),
       ...(r.plan && typeof r.plan === "object" ? r.plan : {}),
@@ -204,6 +208,16 @@ export function compactResult(result: SpeedTestResult): SpeedTestResult {
           country: n.serverMeta.country,
           asn: n.serverMeta.asn,
           asOrganization: n.serverMeta.asOrganization,
+        }
+      : null,
+    networkIdentity: n.networkIdentity
+      ? {
+          ...n.networkIdentity,
+          isp: {
+            ...n.networkIdentity.isp,
+            // drop long notes noise on compact
+            notes: (n.networkIdentity.isp.notes || []).slice(0, 4),
+          },
         }
       : null,
   };

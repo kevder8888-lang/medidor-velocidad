@@ -206,8 +206,21 @@ function buildReportHtml(
   <table>
     <tr><th>Servidor</th><td>${escapeHtml(result.selectedServer?.name || "—")} (${escapeHtml(result.selectedServer?.region || "")})</td></tr>
     <tr><th>Tipo</th><td>${escapeHtml(result.selectedServer?.kind || "—")}${result.selectedServer?.isLoopback ? " · LOOPBACK" : ""}</td></tr>
+    <tr><th>Acceso</th><td>${escapeHtml(result.networkIdentity?.accessLabel || result.precheck?.connectionType || "—")}</td></tr>
+    <tr><th>ISP / operador estimado</th><td>${escapeHtml(result.networkIdentity?.isp.displayName || "—")}</td></tr>
+    <tr><th>ASN / organización</th><td>${escapeHtml(
+      [
+        result.networkIdentity?.isp.asn != null
+          ? `AS${result.networkIdentity.isp.asn}`
+          : null,
+        result.networkIdentity?.isp.organization,
+      ]
+        .filter(Boolean)
+        .join(" · ") || metaBits || "—"
+    )}</td></tr>
+    <tr><th>IP pública</th><td class="mono">${escapeHtml(result.networkIdentity?.isp.clientIp || meta?.clientIp || "—")}</td></tr>
     <tr><th>Meta red</th><td>${escapeHtml(metaBits || "—")}</td></tr>
-    <tr><th>Acceso</th><td>${escapeHtml(result.precheck?.connectionType || "—")} · conf. ${conf.score} (${conf.level})</td></tr>
+    <tr><th>Confianza medición</th><td>${conf.score} (${conf.level})</td></tr>
     <tr><th>Inicio / fin</th><td>${escapeHtml(result.startedAt || "—")} → ${escapeHtml(result.finishedAt || "—")}</td></tr>
     <tr><th>Streams bajada / subida</th><td>${download.streams ?? "—"} / ${upload.streams ?? "—"}</td></tr>
     <tr><th>P10–P90 bajada</th><td>${formatMbps(safeNum(download.p10Mbps))} – ${formatMbps(safeNum(download.p90Mbps))} Mbps</td></tr>

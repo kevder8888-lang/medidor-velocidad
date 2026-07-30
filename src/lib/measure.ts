@@ -1,5 +1,11 @@
 import { computeConfidence } from "./confidence";
 import { computeCvm } from "./cvm";
+import {
+  accessKindLabel,
+  fetchIspMeta,
+  identifyFromMeta,
+  mapAccessKind,
+} from "./isp";
 import { runPrecheck } from "./precheck";
 import {
   CLIENT_VERSION,
@@ -20,6 +26,7 @@ import {
 import type {
   LatencyResult,
   MeasurementServer,
+  NetworkIdentity,
   ProgressEvent,
   SpeedTestResult,
   ThroughputResult,
@@ -361,10 +368,24 @@ export async function runSpeedTest(
     notes.push("El navegador reportó estar sin conexión.");
   }
 
+  const access = mapAccessKind(
+    precheck.connectionType,
+    precheck.networkTypeRaw
+  );
+  if (access === "cellular") {
+    notes.push(
+      "Acceso por datos móviles: el operador se estima por IP/ASN (no se lee la SIM)."
+    );
+  } else if (access === "wifi") {
+    notes.push(
+      "Acceso Wi‑Fi: el ISP detectado es el de la red Wi‑Fi, no el de la SIM."
+    );
+  }
+
   onProgress({
     phase: "server_select",
     progress: 6,
-    message: "Sondeando servidores de medición…",
+    message: "Sondeando servidores e identificando ISP…",
   });
   const serverProbes = await probeServers(servers);
   const { server } = selectBestServer(
@@ -377,7 +398,41 @@ export async function runSpeedTest(
     notes.push(server.warning || "Servidor loopback seleccionado.");
   }
 
-  const serverMeta = await fetchServerMeta(server);
+  // Prefer measurement server meta; always enrich with CF/ip lookup for ISP
+  const [serverMetaRaw, ispMeta] = await Promise.all([
+    fetchServerMeta(server),
+    fetchIspMeta(),
+  ]);
+  const serverMeta = serverMetaRaw?.asn || serverMetaRaw?.asOrganization
+    ? serverMetaRaw
+    : ispMeta ?? serverMetaRaw;
+
+  const isp = identifyFromMeta(serverMeta ?? ispMeta, access);
+  notes.push(...isp.notes);
+
+  const networkIdentity: NetworkIdentity = {
+    access,
+    accessLabel: accessKindLabel(access),
+    isp: {
+      brand: isp.brand,
+      organization: isp.organization,
+      asn: isp.asn,
+      clientIp: isp.clientIp,
+      country: isp.country,
+      city: isp.city,
+      colo: isp.colo,
+      source: isp.source,
+      category: isp.category,
+      displayName: isp.displayName,
+      confidence: isp.confidence,
+      notes: isp.notes,
+    },
+    likelyMobileData: access === "cellular",
+    likelyWifi: access === "wifi",
+    simReadable: false,
+    disclaimer:
+      "El operador/ISP se estima por la IP pública (ASN). El navegador no puede leer el nombre de la SIM. En Wi‑Fi verás el ISP del router, no el de la línea móvil.",
+  };
 
   onProgress({
     phase: "latency",
@@ -508,6 +563,7 @@ export async function runSpeedTest(
     },
     serverProbes,
     serverMeta,
+    networkIdentity,
     plan: { ...plan },
     latency,
     download,

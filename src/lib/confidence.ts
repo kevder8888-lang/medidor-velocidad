@@ -45,13 +45,24 @@ export function computeConfidence(
       impact: 0,
       detail: "Mejor escenario para medir el enlace fijo del operador.",
     });
+  } else if (precheck.connectionType === "cellular") {
+    score -= 10;
+    factors.push({
+      label: "Datos móviles",
+      impact: -10,
+      detail:
+        "Estás midiendo la red celular, no un plan de internet fija. El operador se estima por IP/ASN.",
+    });
+    notes.push(
+      "Red móvil: útil para calidad del operador celular; no equivale a CVM de internet fija."
+    );
   } else {
     score -= 8;
     factors.push({
       label: "Tipo de acceso desconocido",
       impact: -8,
       detail:
-        "El navegador no reportó Ethernet/Wi‑Fi. Confirma que midas por cable.",
+        "El navegador no reportó Ethernet/Wi‑Fi/celular. Confirma el tipo de red.",
     });
   }
 
@@ -127,8 +138,12 @@ export function computeConfidence(
   const level: ConfidenceResult["level"] =
     score >= 75 ? "alta" : score >= 50 ? "media" : "baja";
 
+  // CVM regulatorio de este MVP es para internet fija, no datos móviles
   const validForRegulatoryCvm =
-    !server.isLoopback && score >= 50 && precheck.online;
+    !server.isLoopback &&
+    score >= 50 &&
+    precheck.online &&
+    precheck.connectionType !== "cellular";
 
   if (!validForRegulatoryCvm) {
     notes.push(

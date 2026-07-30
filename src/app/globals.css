@@ -1482,6 +1482,51 @@ code {
   }
 }
 
+/* ISP card */
+.isp-card {
+  margin-bottom: 16px;
+}
+
+.isp-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.isp-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.isp-name {
+  font-size: 1.35rem;
+  font-weight: 750;
+  color: var(--osiptel-blue-dark);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.isp-sub {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.chip-isp {
+  border-color: var(--border-strong);
+  color: var(--osiptel-blue-dark);
+  background: var(--osiptel-surface);
+}
+
+.muted-p {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
 /* Prefer reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,

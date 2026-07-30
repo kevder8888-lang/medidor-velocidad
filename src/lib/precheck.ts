@@ -13,6 +13,7 @@ function mapConnectionType(raw: string | undefined): AccessType {
   const t = raw.toLowerCase();
   if (t === "ethernet" || t === "wired") return "ethernet";
   if (t === "wifi" || t === "wlan") return "wifi";
+  if (t === "cellular" || t === "cell" || t === "wimax") return "cellular";
   return "unknown";
 }
 
@@ -26,19 +27,24 @@ function isLocalhostHost(hostname: string): boolean {
 
 /**
  * Best-effort environment pre-check.
- * Browsers expose limited link info; we never claim absolute certainty.
+ * Browsers expose limited link info; SIM operator is NOT available on web.
  */
 export async function runPrecheck(): Promise<PreCheckResult> {
   const nav = typeof navigator !== "undefined" ? navigator : null;
   const conn = (nav as Navigator & { connection?: NetworkInformation })
     ?.connection;
 
+  const networkTypeRaw = conn?.type ?? null;
   const connectionType = mapConnectionType(conn?.type);
   const effectiveType = conn?.effectiveType ?? null;
   const downlinkMbpsHint =
     typeof conn?.downlink === "number" ? conn.downlink : null;
   const rttHintMs = typeof conn?.rtt === "number" ? conn.rtt : null;
   const saveData = Boolean(conn?.saveData);
+
+  const ua = nav?.userAgent ?? "unknown";
+  const isAndroid = /Android/i.test(ua);
+  const isMobileUa = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
 
   const pageOrigin =
     typeof window !== "undefined" ? window.location.origin : "";
@@ -47,13 +53,13 @@ export async function runPrecheck(): Promise<PreCheckResult> {
       ? isLocalhostHost(window.location.hostname)
       : false;
 
-  // Soft heuristic: WebRTC local candidates vs public would be better;
-  // for MVP keep false unless saveData + offline combos appear later.
+  // Soft VPN hint: not reliable from browser alone
   const vpnHint = false;
 
   return {
     online: nav?.onLine ?? true,
     connectionType,
+    networkTypeRaw,
     effectiveType,
     downlinkMbpsHint,
     rttHintMs,
@@ -65,9 +71,11 @@ export async function runPrecheck(): Promise<PreCheckResult> {
         ? (nav as Navigator & { deviceMemory?: number }).deviceMemory!
         : null,
     vpnHint,
-    userAgent: nav?.userAgent ?? "unknown",
+    userAgent: ua,
     timestamp: new Date().toISOString(),
     pageOrigin,
     isLocalhostApp,
+    isAndroid,
+    isMobileUa,
   };
 }
