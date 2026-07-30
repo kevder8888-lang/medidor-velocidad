@@ -270,46 +270,6 @@ export function AdminPanel() {
         </div>
       </section>
 
-      {selected?.latitude != null && selected?.longitude != null && (
-        <section className="card" style={{ marginTop: 12 }}>
-          <h2>Mapa · medición seleccionada</h2>
-          <p className="field-hint" style={{ marginBottom: 8 }}>
-            {selected.operator || "—"} · ↓{" "}
-            {formatMbps(selected.download_mbps ?? 0)} ·{" "}
-            {mapProviderLabel()}
-          </p>
-          <div className="map-frame-wrap map-frame-hero">
-            <iframe
-              title="Mapa admin"
-              className="map-frame"
-              src={mapEmbedUrl(selected.latitude, selected.longitude)}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              allowFullScreen
-            />
-          </div>
-          <div className="map-meta-bar">
-            <span className="mono">
-              {formatCoords(selected.latitude, selected.longitude)}
-            </span>
-            <span className="map-meta-sep">·</span>
-            <a
-              href={mapExternalUrl(selected.latitude, selected.longitude)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Abrir mapa
-            </a>
-          </div>
-          {withGeo.length > 1 && (
-            <p className="field-hint" style={{ marginTop: 8 }}>
-              {withGeo.length} mediciones con GPS en el filtro actual (el mapa
-              muestra la seleccionada).
-            </p>
-          )}
-        </section>
-      )}
-
       <section className="card" style={{ marginTop: 12 }}>
         <h2>Todas las mediciones</h2>
         {filtered.length === 0 ? (
@@ -390,6 +350,46 @@ export function AdminPanel() {
           </div>
         )}
       </section>
+
+      {selected?.latitude != null && selected?.longitude != null && (
+        <section className="card" style={{ marginTop: 12 }}>
+          <h2>Mapa · medición seleccionada</h2>
+          <p className="field-hint" style={{ marginBottom: 8 }}>
+            {selected.operator || "—"} · ↓{" "}
+            {formatMbps(selected.download_mbps ?? 0)} ·{" "}
+            {mapProviderLabel()}
+          </p>
+          <div className="map-frame-wrap map-frame-hero">
+            <iframe
+              title="Mapa admin"
+              className="map-frame"
+              src={mapEmbedUrl(selected.latitude, selected.longitude)}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            />
+          </div>
+          <div className="map-meta-bar">
+            <span className="mono">
+              {formatCoords(selected.latitude, selected.longitude)}
+            </span>
+            <span className="map-meta-sep">·</span>
+            <a
+              href={mapExternalUrl(selected.latitude, selected.longitude)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Abrir mapa
+            </a>
+          </div>
+          {withGeo.length > 1 && (
+            <p className="field-hint" style={{ marginTop: 8 }}>
+              {withGeo.length} mediciones con GPS en el filtro actual (el mapa
+              muestra la seleccionada).
+            </p>
+          )}
+        </section>
+      )}
     </div>
   );
 }
