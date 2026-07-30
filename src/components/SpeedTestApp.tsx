@@ -730,13 +730,13 @@ export function SpeedTestApp() {
         onGrant={handleGpsGrant}
         onDeny={handleGpsDeny}
       />
+      {/* Mismo ancho de viewport que el menú Medir | Mapa | Historial | Admin */}
+      <BrandHeader accessKind={liveAccess} />
       <div
         className={`app ${running ? "is-running" : ""} ${
           tab === "medir" ? "has-sticky-cta" : "no-sticky-cta"
         }`}
       >
-        {/* Mismo eje horizontal que sticky-cta / contenido de medición */}
-        <BrandHeader accessKind={liveAccess} />
         <div className="meta-chips meta-chips-scroll desktop-only" aria-label="Metadatos">
           <span className="chip">CVM {CVM_THRESHOLD_PCT}%</span>
           <span className="chip chip-isp">

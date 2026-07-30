@@ -11,7 +11,7 @@ export function BrandHeader({
 
   return (
     <div className="brand-chrome">
-      {/* Franja roja: mismo ancho que cards / barra Iniciar medición */}
+      {/* Ancho de pantalla = menú Medir | Mapa | Admin */}
       <div className="gov-topbar">
         <div className="gov-topbar-inner">
           <a
@@ -40,7 +40,6 @@ export function BrandHeader({
         </div>
       </div>
 
-      {/* Banda blanca OSIPTEL */}
       <div className="inst-header-band">
         <header className="inst-header">
           <div className="inst-header-inner">
@@ -61,6 +60,7 @@ export function BrandHeader({
 
             <div className="inst-title-block">
               <p className="inst-kicker">{BRAND.name}</p>
+              {/* Título completo, sin ellipsis: puede envolver a 2 líneas */}
               <h1 className="inst-title">{BRAND.productName}</h1>
               <p className="inst-subtitle desktop-only">
                 {BRAND.productSubtitle}
