@@ -2,17 +2,15 @@
 
 import { useEffect } from "react";
 
+/** Escala base Honor: ~15% más compacta (UI se veía grande en MagicOS). */
+const HONOR_SCALE_DEFAULT = 0.85;
+/** Si el SO infla mucho el texto, bajamos un poco más. */
+const HONOR_SCALE_MIN = 0.8;
+
 /**
  * Clases de dispositivo en <html>.
- *
- * Honor/Huawei (MagicOS) a menudo pinta la UI un poco más grande que
- * Chrome stock / Xiaomi. Buenas prácticas (solo is-honor):
- *  1. -webkit-text-size-adjust: 100% → frena inflación de texto del motor
- *  2. zoom CSS (Chromium) → escala layout + fixed de forma uniforme
- *     (mejor que transform:scale, que rompe position:fixed y el scroll)
- *  3. Escala suave 0.92–0.96 según medición ligera; nunca en Xiaomi
- *
- * is-narrow: solo padding en pantallas < 380px (todos los fabricantes).
+ * Honor: zoom de página más agresivo (solo is-honor).
+ * Xiaomi: sin zoom (protege scroll).
  */
 export function DeviceClass() {
   useEffect(() => {
@@ -28,8 +26,7 @@ export function DeviceClass() {
     root.classList.toggle("is-honor", isHonor);
 
     if (isHonor) {
-      // Escala base ~6% más compacta; afinamos si el texto del sistema infla
-      let scale = 0.94;
+      let scale = HONOR_SCALE_DEFAULT;
       try {
         const probe = document.createElement("div");
         probe.setAttribute("aria-hidden", "true");
@@ -41,20 +38,24 @@ export function DeviceClass() {
         root.appendChild(probe);
         const h = probe.getBoundingClientRect().height || 100;
         probe.remove();
-        // En render “normal” ~100–110; si el SO infla mucho, h sube
         const inflation = h / 100;
-        if (inflation > 1.08) {
-          // Compensar parte de la inflación del sistema (tope suave)
-          scale = Math.max(0.9, Math.min(0.94, 0.94 / (inflation * 0.5 + 0.5)));
-        } else if (inflation > 1.02) {
-          scale = 0.93;
+        if (inflation > 1.12) {
+          scale = HONOR_SCALE_MIN;
+        } else if (inflation > 1.05) {
+          scale = 0.82;
         }
       } catch {
-        scale = 0.94;
+        scale = HONOR_SCALE_DEFAULT;
       }
-      root.style.setProperty("--honor-ui-scale", String(Number(scale.toFixed(3))));
+      root.style.setProperty(
+        "--honor-ui-scale",
+        String(Number(scale.toFixed(3)))
+      );
+      // Refuerzo inline por si MagicOS tarda en aplicar la clase CSS
+      root.style.zoom = String(scale);
     } else {
       root.style.removeProperty("--honor-ui-scale");
+      root.style.removeProperty("zoom");
     }
 
     const narrow = () => {
@@ -67,6 +68,7 @@ export function DeviceClass() {
       window.removeEventListener("resize", narrow);
       root.classList.remove("is-narrow", "is-honor", "is-xiaomi");
       root.style.removeProperty("--honor-ui-scale");
+      root.style.removeProperty("zoom");
     };
   }, []);
 

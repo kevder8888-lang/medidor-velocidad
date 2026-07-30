@@ -2272,29 +2272,31 @@ html.is-narrow .app {
 }
 
 /*
- * Honor / Huawei / MagicOS ONLY — UI un poco grande por defecto.
- * Buenas prácticas:
- *  - text-size-adjust: 100% evita inflación de tipografía del WebView
- *  - zoom (Chromium) escala layout + position:fixed de forma uniforme
- *    (NO usar transform:scale en body: rompe fixed, sticky y scroll MIUI)
- *  - --honor-ui-scale lo calcula DeviceClass (~0.92–0.94)
+ * Honor / Huawei / MagicOS ONLY — UI se ve grande; achicar ~15%.
+ * zoom CSS (Chromium) escala layout + fixed. NO transform:scale.
+ * --honor-ui-scale ~0.85 (DeviceClass); mínimo ~0.80 si hay inflación.
  * Xiaomi / Android genérico: sin estas reglas.
  */
 html.is-honor {
   -webkit-text-size-adjust: 100% !important;
   text-size-adjust: 100% !important;
-  /* Zoom de página suave; default 0.94 si JS aún no midió */
-  zoom: var(--honor-ui-scale, 0.94);
+  zoom: var(--honor-ui-scale, 0.85) !important;
 }
 
-/* Fallback si el motor no soporta zoom (poco habitual en MagicOS) */
+/* Refuerzo en body por si el motor aplica zoom solo en body */
+html.is-honor body {
+  zoom: 1; /* evita doble zoom; el de html ya escala todo */
+  -webkit-text-size-adjust: 100% !important;
+  text-size-adjust: 100% !important;
+}
+
 @supports not (zoom: 1) {
   html.is-honor {
-    font-size: 93.75%; /* ~15px si el base es 16 → reduce rem/em */
+    font-size: 85%;
   }
 }
 
-/* Xiaomi: no tocar zoom ni densidad (protege scroll MIUI) */
+/* Xiaomi: no tocar zoom (protege scroll MIUI) */
 html.is-xiaomi {
-  zoom: normal;
+  zoom: normal !important;
 }
