@@ -2270,3 +2270,31 @@ html.is-narrow .app {
   padding-left: max(10px, var(--safe-left));
   padding-right: max(10px, var(--safe-right));
 }
+
+/*
+ * Honor / Huawei / MagicOS ONLY — UI un poco grande por defecto.
+ * Buenas prácticas:
+ *  - text-size-adjust: 100% evita inflación de tipografía del WebView
+ *  - zoom (Chromium) escala layout + position:fixed de forma uniforme
+ *    (NO usar transform:scale en body: rompe fixed, sticky y scroll MIUI)
+ *  - --honor-ui-scale lo calcula DeviceClass (~0.92–0.94)
+ * Xiaomi / Android genérico: sin estas reglas.
+ */
+html.is-honor {
+  -webkit-text-size-adjust: 100% !important;
+  text-size-adjust: 100% !important;
+  /* Zoom de página suave; default 0.94 si JS aún no midió */
+  zoom: var(--honor-ui-scale, 0.94);
+}
+
+/* Fallback si el motor no soporta zoom (poco habitual en MagicOS) */
+@supports not (zoom: 1) {
+  html.is-honor {
+    font-size: 93.75%; /* ~15px si el base es 16 → reduce rem/em */
+  }
+}
+
+/* Xiaomi: no tocar zoom ni densidad (protege scroll MIUI) */
+html.is-xiaomi {
+  zoom: normal;
+}
