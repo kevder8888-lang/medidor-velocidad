@@ -1766,11 +1766,13 @@ export function SpeedTestApp() {
         )}
 
         <div className="footer-note desktop-only">
-          <strong>PDF e historial.</strong> Cada medición se guarda en este
-          navegador (hasta 50). Exporta PDF desde el resultado o desde el
-          historial: se abre un informe con logos embebidos; elige{" "}
-          <em>Guardar como PDF</em> en el diálogo de impresión. Si el popup está
-          bloqueado, se descarga HTML automáticamente.
+          <p>
+            <strong>PDF e historial.</strong> Cada medición se guarda en este
+            navegador (hasta 50). Exporta PDF desde el resultado o desde el
+            historial: se abre un informe con logos embebidos; elige{" "}
+            <em>Guardar como PDF</em> en el diálogo de impresión. Si el popup
+            está bloqueado, se descarga HTML automáticamente.
+          </p>
         </div>
       </div>
 
