@@ -1402,9 +1402,9 @@ export function SpeedTestApp() {
                 <h2>Cumplimiento CVM</h2>
                 {!result?.cvm ? (
                   <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
-                    Tras la medición se evaluará si tu bajada alcanza al menos el{" "}
-                    {CVM_THRESHOLD_PCT}% de lo contratado (Ley 31207 / Reglamento
-                    de Calidad).
+                    {plan.serviceMode === "mobile"
+                      ? `Móvil ${radioTechLabel(plan.radioTech)}: se evaluará el ${CVM_THRESHOLD_PCT}% de la velocidad de referencia del operador (${plan.mobileDownMbps} Mbps → mín. ${Math.round(plan.mobileDownMbps * CVM_THRESHOLD_PCT) / 100} Mbps).`
+                      : `Tras la medición se evaluará si tu bajada alcanza al menos el ${CVM_THRESHOLD_PCT}% de lo contratado (Ley 31207).`}
                   </p>
                 ) : (
                   <>
@@ -1414,16 +1414,23 @@ export function SpeedTestApp() {
                         <strong>
                           {result.cvm.meetsCvm
                             ? "Cumple velocidad mínima garantizada"
-                            : "No alcanza el 70% de la velocidad contratada"}
+                            : result.cvm.serviceMode === "mobile"
+                              ? "No alcanza el 70% de la referencia móvil"
+                              : "No alcanza el 70% de la velocidad contratada"}
                         </strong>
                         <span>
                           Medido {formatMbps(result.cvm.measuredDownMbps)} Mbps
                           · mínimo{" "}
                           {formatMbps(result.cvm.minGuaranteedDownMbps)} Mbps (
-                          {result.cvm.cvmPct}% del plan)
+                          {result.cvm.cvmPct}% de la referencia)
                         </span>
                       </div>
                     </div>
+                    {result.cvm.basisNote && (
+                      <p className="field-hint" style={{ marginBottom: 10 }}>
+                        {result.cvm.basisNote}
+                      </p>
+                    )}
                     {!result.confidence?.validForRegulatoryCvm && (
                       <div className="sem warn" style={{ marginTop: 8 }}>
                         <span className="sem-dot" />
@@ -1648,7 +1655,9 @@ export function SpeedTestApp() {
               </div>
             ) : (
               <div className="sticky-cta-hint">
-                Plan {plan.downMbps}/{plan.upMbps ?? "—"} Mbps
+                {plan.serviceMode === "mobile"
+                  ? `Móvil ${radioTechLabel(plan.radioTech)} · ref ${plan.mobileDownMbps} Mbps`
+                  : `Plan ${plan.downMbps}/${plan.upMbps ?? "—"} Mbps`}
                 {result
                   ? ` · Última ↓ ${formatMbps(result.download?.medianMbps ?? 0)}`
                   : ""}
