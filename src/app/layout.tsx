@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { BRAND } from "@/lib/brand";
 import { DeviceClass } from "@/components/DeviceClass";
 import "./globals.css";
@@ -60,6 +61,14 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
+        {/* Honor: zoom global antes del paint en Medir/Mapa/Historial/Admin */}
+        <Script
+          id="honor-ui-scale"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var ua=navigator.userAgent||"";if(/XiaoMi|Xiaomi|Redmi|POCO|MIUI|HyperOS/i.test(ua))return;if(!/Honor|HONOR|Huawei|HUAWEI|HarmonyOS|MagicUI|MagicOS/i.test(ua))return;var r=document.documentElement;r.classList.add("is-honor");r.style.setProperty("--honor-ui-scale","0.75");r.style.zoom="0.75";}catch(e){}})();`,
+          }}
+        />
         <DeviceClass />
         {children}
       </body>
