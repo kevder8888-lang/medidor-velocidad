@@ -49,6 +49,7 @@ export function AdminPanel() {
   const [rows, setRows] = useState<MeasurementRow[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const [filterOp, setFilterOp] = useState("");
@@ -178,6 +179,27 @@ export function AdminPanel() {
     };
   }, [filtered, withGeo.length]);
 
+  async function exportExcel() {
+    if (!filtered.length || exportingExcel) return;
+    setExportingExcel(true);
+    try {
+      const buffer = await measurementsToEnrichedXlsx(filtered);
+      downloadXlsx(
+        `informe-mediciones-${new Date().toISOString().slice(0, 10)}.xlsx`,
+        buffer
+      );
+    } catch (err) {
+      console.error(err);
+      setLoadError(
+        err instanceof Error
+          ? `No se pudo generar el Excel: ${err.message}`
+          : "No se pudo generar el Excel."
+      );
+    } finally {
+      setExportingExcel(false);
+    }
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoginError(null);
@@ -291,16 +313,11 @@ export function AdminPanel() {
             <button
               type="button"
               className="btn btn-secondary btn-touch"
-              onClick={() =>
-                downloadXlsx(
-                  `informe-mediciones-${new Date().toISOString().slice(0, 10)}.xlsx`,
-                  measurementsToEnrichedXlsx(filtered)
-                )
-              }
-              disabled={!filtered.length}
-              title="Excel .xlsx con columnas de informe"
+              onClick={() => void exportExcel()}
+              disabled={!filtered.length || exportingExcel}
+              title="Excel institucional: portada OSIPTEL, encabezados y celdas resaltadas"
             >
-              Excel
+              {exportingExcel ? "Generando…" : "Excel"}
             </button>
             <button
               type="button"
