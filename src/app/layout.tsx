@@ -61,12 +61,12 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        {/* Honor: zoom global antes del paint en Medir/Mapa/Historial/Admin */}
+        {/* Honor: reduce vía viewport initial-scale (más fiable que CSS zoom en MagicOS) antes del paint */}
         <Script
           id="honor-ui-scale"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var ua=navigator.userAgent||"";if(/XiaoMi|Xiaomi|Redmi|POCO|MIUI|HyperOS/i.test(ua))return;if(!/Honor|HONOR|Huawei|HUAWEI|HarmonyOS|MagicUI|MagicOS/i.test(ua))return;var s="0.75";try{var k=sessionStorage.getItem("osiptel-honor-ui-scale");if(k&&+k>=0.72&&+k<=0.95)s=k;}catch(e){}var r=document.documentElement;r.classList.add("is-honor");r.style.setProperty("--honor-ui-scale",s);r.style.zoom=s;}catch(e){}})();`,
+            __html: `(function(){try{var ua=navigator.userAgent||"";if(/XiaoMi|Xiaomi|Redmi|POCO|MIUI|HyperOS/i.test(ua))return;if(!/Honor|HONOR|Huawei|HUAWEI|HarmonyOS|MagicUI|MagicOS/i.test(ua))return;var s="0.7";try{var k=sessionStorage.getItem("osiptel-honor-ui-scale");if(k&&+k>=0.55&&+k<=0.95)s=k;}catch(e){}var r=document.documentElement;r.classList.add("is-honor");r.style.setProperty("--honor-ui-scale",s);var vp=document.querySelector('meta[name="viewport"]');if(vp){vp.setAttribute("content","width=device-width, initial-scale="+s+", minimum-scale="+s+", maximum-scale=5, viewport-fit=cover");}}catch(e){}})();`,
           }}
         />
         <DeviceClass />

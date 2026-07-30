@@ -43,7 +43,13 @@ export function DeviceClass() {
           root.appendChild(probe);
           const h = probe.getBoundingClientRect().height || 100;
           probe.remove();
-          if (h / 100 > 1.1) scale = HONOR_SCALE_MIN;
+          const ratio = h / 100;
+          // Compensación proporcional a la inflación real medida,
+          // en vez de saltar a un valor fijo adivinado.
+          if (ratio > 1.05) {
+            const adjusted = HONOR_SCALE_DEFAULT / ratio;
+            scale = Math.max(HONOR_SCALE_MIN, Math.min(HONOR_SCALE_DEFAULT, adjusted));
+          }
         } catch {
           /* keep default */
         }

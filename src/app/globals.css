@@ -2312,20 +2312,19 @@ html.is-narrow .app {
 
 /*
  * Honor / Huawei / MagicOS ONLY — UI grande/desbordada.
- * zoom ~0.75 en <html> = Medir + Mapa local + Historial + Admin.
+ * La reducción real se aplica vía viewport initial-scale (ver honorScale.ts),
+ * no con CSS zoom: el WebView de MagicOS no lo respeta de forma consistente.
  * NO transform:scale (rompe fixed). Xiaomi sin estas reglas.
  */
 html.is-honor {
   -webkit-text-size-adjust: 100% !important;
   text-size-adjust: 100% !important;
-  zoom: var(--honor-ui-scale, 0.75) !important;
   /* Evitar desborde horizontal al escalar */
   max-width: 100%;
   overflow-x: clip;
 }
 
 html.is-honor body {
-  zoom: 1; /* sin doble zoom; hereda el de html */
   max-width: 100%;
   overflow-x: clip;
   -webkit-text-size-adjust: 100% !important;
@@ -2350,13 +2349,4 @@ html.is-honor .map-frame-hero {
   max-height: 48dvh;
 }
 
-@supports not (zoom: 1) {
-  html.is-honor {
-    font-size: 75%;
-  }
-}
-
-/* Xiaomi: no tocar zoom (protege scroll MIUI) */
-html.is-xiaomi {
-  zoom: normal !important;
-}
+/* Xiaomi: sin ajustes de escala (protege scroll MIUI) */
