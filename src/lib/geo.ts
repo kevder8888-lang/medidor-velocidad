@@ -94,3 +94,49 @@ export function osmEmbedUrl(lat: number, lon: number, zoom = 16): string {
 export function osmExternalUrl(lat: number, lon: number): string {
   return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}`;
 }
+
+/** API key de Google Maps (definida en .env.local o Vercel) */
+export function getGoogleMapsApiKey(): string | null {
+  const k = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!k || !String(k).trim()) return null;
+  return String(k).trim();
+}
+
+export function hasGoogleMaps(): boolean {
+  return Boolean(getGoogleMapsApiKey());
+}
+
+/**
+ * Maps Embed API — requiere Maps Embed API habilitada en Google Cloud.
+ * https://developers.google.com/maps/documentation/embed/get-started
+ */
+export function googleMapsEmbedUrl(
+  lat: number,
+  lon: number,
+  zoom = 16
+): string | null {
+  const key = getGoogleMapsApiKey();
+  if (!key) return null;
+  const q = encodeURIComponent(`${lat},${lon}`);
+  return `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(key)}&q=${q}&zoom=${zoom}&language=es`;
+}
+
+/** Enlace externo a Google Maps (no requiere key en la URL pública del usuario) */
+export function googleMapsExternalUrl(lat: number, lon: number): string {
+  return `https://www.google.com/maps?q=${lat},${lon}&z=17&hl=es`;
+}
+
+/** Elige Google si hay key; si no, OpenStreetMap */
+export function mapEmbedUrl(lat: number, lon: number, zoom = 16): string {
+  return googleMapsEmbedUrl(lat, lon, zoom) ?? osmEmbedUrl(lat, lon, zoom);
+}
+
+export function mapExternalUrl(lat: number, lon: number): string {
+  return hasGoogleMaps()
+    ? googleMapsExternalUrl(lat, lon)
+    : osmExternalUrl(lat, lon);
+}
+
+export function mapProviderLabel(): "Google Maps" | "OpenStreetMap" {
+  return hasGoogleMaps() ? "Google Maps" : "OpenStreetMap";
+}

@@ -4,8 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import {
   formatCoords,
   getDevicePosition,
-  osmEmbedUrl,
-  osmExternalUrl,
+  hasGoogleMaps,
+  mapEmbedUrl,
+  mapExternalUrl,
+  mapProviderLabel,
   type DeviceGeo,
 } from "@/lib/geo";
 import { formatMbps } from "@/lib/stats";
@@ -23,6 +25,8 @@ export function MapPanel({
   const [geo, setGeo] = useState<DeviceGeo | null>(lastGeo);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const provider = mapProviderLabel();
+  const usingGoogle = hasGoogleMaps();
 
   const locate = useCallback(async () => {
     setLoading(true);
@@ -67,8 +71,15 @@ export function MapPanel({
         </div>
 
         <p className="field-hint" style={{ marginBottom: 12 }}>
-          Coordenadas del <strong>dispositivo</strong> (GPS/red Android). No es la
-          ubicación del ISP por IP.
+          Coordenadas del <strong>dispositivo</strong> (GPS Android). Mapa:{" "}
+          <strong>{provider}</strong>
+          {!usingGoogle && (
+            <>
+              {" "}
+              · Para Google Maps configura{" "}
+              <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> en Vercel / .env.local
+            </>
+          )}
         </p>
 
         {error && <div className="error-box">{error}</div>}
@@ -105,21 +116,22 @@ export function MapPanel({
 
             <div className="map-frame-wrap">
               <iframe
-                title="Mapa de ubicación del dispositivo"
+                title={`Mapa ${provider}`}
                 className="map-frame"
-                src={osmEmbedUrl(geo.latitude, geo.longitude)}
+                src={mapEmbedUrl(geo.latitude, geo.longitude)}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
               />
             </div>
 
             <p style={{ marginTop: 10, fontSize: 13 }}>
               <a
-                href={osmExternalUrl(geo.latitude, geo.longitude)}
+                href={mapExternalUrl(geo.latitude, geo.longitude)}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Abrir en OpenStreetMap
+                Abrir en {provider}
               </a>
             </p>
           </>
@@ -162,7 +174,7 @@ export function MapPanel({
                 {h.geo && (
                   <a
                     className="btn btn-ghost btn-touch"
-                    href={osmExternalUrl(h.geo.latitude, h.geo.longitude)}
+                    href={mapExternalUrl(h.geo.latitude, h.geo.longitude)}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
