@@ -19,6 +19,7 @@ import {
 import type { MeasurementRow } from "@/lib/supabase/types";
 import type { Session } from "@supabase/supabase-js";
 import { AdminMultiMap } from "@/components/AdminMultiMap";
+import { AppSelect } from "@/components/AppSelect";
 import { radioTechLabel } from "@/lib/mobilePlans";
 
 function downloadBlob(filename: string, content: string, mime: string) {
@@ -357,30 +358,34 @@ export function AdminPanel() {
           </div>
           <div className="field">
             <label htmlFor="filter-cvm">CVM</label>
-            <select
+            <AppSelect
               id="filter-cvm"
               value={filterCvm}
-              onChange={(e) => setFilterCvm(e.target.value as CvmFilter)}
-            >
-              <option value="all">Todos</option>
-              <option value="ok">Cumple</option>
-              <option value="fail">No cumple</option>
-              <option value="na">Sin CVM</option>
-            </select>
+              aria-label="Filtro CVM"
+              options={[
+                { value: "all", label: "Todos" },
+                { value: "ok", label: "Cumple" },
+                { value: "fail", label: "No cumple" },
+                { value: "na", label: "Sin CVM" },
+              ]}
+              onChange={(v) => setFilterCvm(v as CvmFilter)}
+            />
           </div>
           <div className="field">
             <label htmlFor="filter-acc">Acceso</label>
-            <select
+            <AppSelect
               id="filter-acc"
               value={filterAccess}
-              onChange={(e) => setFilterAccess(e.target.value as AccessFilter)}
-            >
-              <option value="all">Todos</option>
-              <option value="fixed">Fija</option>
-              <option value="mobile">Móvil (plan)</option>
-              <option value="cellular">Datos celulares</option>
-              <option value="wifi">Wi‑Fi</option>
-            </select>
+              aria-label="Filtro acceso"
+              options={[
+                { value: "all", label: "Todos" },
+                { value: "fixed", label: "Fija" },
+                { value: "mobile", label: "Móvil (plan)" },
+                { value: "cellular", label: "Datos celulares" },
+                { value: "wifi", label: "Wi‑Fi" },
+              ]}
+              onChange={(v) => setFilterAccess(v as AccessFilter)}
+            />
           </div>
           <div className="field">
             <label htmlFor="date-from">Desde</label>

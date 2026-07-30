@@ -9,6 +9,7 @@ import { GpsConsentModal } from "@/components/GpsConsentModal";
 import { MapPanel } from "@/components/MapPanel";
 import { Sparkline } from "@/components/Sparkline";
 import { SplashScreen } from "@/components/SplashScreen";
+import { AppSelect } from "@/components/AppSelect";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { saveMeasurementToCloud } from "@/lib/supabase/measurements";
 import type { DeviceGeo, GpsConsent } from "@/lib/geo";
@@ -1237,16 +1238,23 @@ export function SpeedTestApp() {
                 >
                   <div className="field">
                     <label htmlFor="svc-mode">Tipo de servicio</label>
-                    <select
+                    <AppSelect
                       id="svc-mode"
                       value={plan.serviceMode}
                       disabled={running}
-                      onChange={(e) => {
-                        const mode = e.target.value as "fixed" | "mobile";
+                      aria-label="Tipo de servicio"
+                      options={[
+                        { value: "fixed", label: "Internet fija" },
+                        {
+                          value: "mobile",
+                          label: "Internet móvil (3G/4G/5G)",
+                        },
+                      ]}
+                      onChange={(v) => {
+                        const mode = v as "fixed" | "mobile";
                         setPlan((p) => ({
                           ...p,
                           serviceMode: mode,
-                          // al pasar a móvil, rellenar catálogo si no hay valores
                           ...(mode === "mobile" && !p.mobileDownMbps
                             ? getDefaultMobileSpeeds(
                                 p.operator || "Movistar",
@@ -1255,17 +1263,14 @@ export function SpeedTestApp() {
                             : {}),
                         }));
                       }}
-                    >
-                      <option value="fixed">Internet fija</option>
-                      <option value="mobile">Internet móvil (3G/4G/5G)</option>
-                    </select>
+                    />
                   </div>
 
                   {plan.serviceMode === "mobile" ? (
                     <>
                       <div className="field">
                         <label htmlFor="mop">Operador móvil</label>
-                        <select
+                        <AppSelect
                           id="mop"
                           value={
                             MOBILE_OPERATORS.includes(
@@ -1277,8 +1282,12 @@ export function SpeedTestApp() {
                                 : "Movistar"
                           }
                           disabled={running}
-                          onChange={(e) => {
-                            const op = e.target.value;
+                          aria-label="Operador móvil"
+                          options={MOBILE_OPERATORS.map((op) => ({
+                            value: op,
+                            label: op,
+                          }))}
+                          onChange={(op) => {
                             const radio = plan.radioTech || "4g";
                             const speeds =
                               op === "Otro"
@@ -1289,18 +1298,13 @@ export function SpeedTestApp() {
                                 : getDefaultMobileSpeeds(op, radio);
                             setPlan((p) => ({
                               ...p,
-                              operator: op === "Otro" ? p.operator || "Otro" : op,
+                              operator:
+                                op === "Otro" ? p.operator || "Otro" : op,
                               mobileDownMbps: speeds.downMbps,
                               mobileUpMbps: speeds.upMbps,
                             }));
                           }}
-                        >
-                          {MOBILE_OPERATORS.map((op) => (
-                            <option key={op} value={op}>
-                              {op}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       </div>
                       {(plan.operator === "Otro" ||
                         !MOBILE_OPERATORS.includes(
@@ -1325,12 +1329,17 @@ export function SpeedTestApp() {
                       )}
                       <div className="field">
                         <label htmlFor="radio">Tecnología de radio</label>
-                        <select
+                        <AppSelect
                           id="radio"
                           value={plan.radioTech}
                           disabled={running}
-                          onChange={(e) => {
-                            const radio = e.target.value as RadioTech;
+                          aria-label="Tecnología de radio"
+                          options={RADIO_TECHS.map((t) => ({
+                            value: t.id,
+                            label: t.label,
+                          }))}
+                          onChange={(v) => {
+                            const radio = v as RadioTech;
                             const op = plan.operator || "Movistar";
                             const speeds = getDefaultMobileSpeeds(op, radio);
                             setPlan((p) => ({
@@ -1340,13 +1349,7 @@ export function SpeedTestApp() {
                               mobileUpMbps: speeds.upMbps,
                             }));
                           }}
-                        >
-                          {RADIO_TECHS.map((t) => (
-                            <option key={t.id} value={t.id}>
-                              {t.label}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       </div>
                       <p className="field-hint">
                         Cada operador define la velocidad de referencia por
@@ -1461,45 +1464,50 @@ export function SpeedTestApp() {
                       </div>
                       <div className="field">
                         <label htmlFor="tech">Tecnología fija</label>
-                        <select
+                        <AppSelect
                           id="tech"
                           value={plan.technology}
                           disabled={running}
-                          onChange={(e) =>
+                          aria-label="Tecnología fija"
+                          options={[
+                            { value: "ftth", label: "FTTH (fibra)" },
+                            { value: "hfc", label: "HFC (cable)" },
+                            {
+                              value: "wireless_fixed",
+                              label: "Inalámbrico fijo",
+                            },
+                            { value: "other", label: "Otra" },
+                            { value: "", label: "No especificada" },
+                          ]}
+                          onChange={(v) =>
                             setPlan((p) => ({
                               ...p,
-                              technology: e.target
-                                .value as UserPlan["technology"],
+                              technology: v as UserPlan["technology"],
                             }))
                           }
-                        >
-                          <option value="ftth">FTTH (fibra)</option>
-                          <option value="hfc">HFC (cable)</option>
-                          <option value="wireless_fixed">Inalámbrico fijo</option>
-                          <option value="other">Otra</option>
-                          <option value="">No especificada</option>
-                        </select>
+                        />
                       </div>
                     </>
                   )}
                   <div className="field">
                     <label htmlFor="srv">Servidor de medición</label>
-                    <select
+                    <AppSelect
                       id="srv"
                       value={serverPref}
                       disabled={running}
-                      onChange={(e) => setServerPref(e.target.value)}
-                    >
-                      <option value="auto">
-                        Automático (mejor RTT, evita loopback)
-                      </option>
-                      {servers.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                          {s.isLoopback ? " ⚠ localhost" : ""} — {s.region}
-                        </option>
-                      ))}
-                    </select>
+                      aria-label="Servidor de medición"
+                      options={[
+                        {
+                          value: "auto",
+                          label: "Automático (mejor RTT, evita loopback)",
+                        },
+                        ...servers.map((s) => ({
+                          value: s.id,
+                          label: `${s.name}${s.isLoopback ? " ⚠ localhost" : ""} — ${s.region}`,
+                        })),
+                      ]}
+                      onChange={setServerPref}
+                    />
                   </div>
                   {servers.find((s) => s.id === serverPref)?.warning && (
                     <p className="field-hint warn">
