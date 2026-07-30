@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { BRAND } from "@/lib/brand";
+import { DeviceClass } from "@/components/DeviceClass";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -58,7 +59,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        <DeviceClass />
+        {children}
+      </body>
     </html>
   );
 }

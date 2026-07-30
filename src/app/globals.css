@@ -2174,3 +2174,114 @@ code {
     animation: none;
   }
 }
+
+/**
+ * Honor / Huawei (MagicOS): render un poco más “grande”.
+ * Densidad ~4–6% más compacta, SIN transform:scale (rompe fixed + scroll).
+ * Xiaomi no recibe esta clase → no se toca su scroll.
+ */
+html.is-honor {
+  --bottom-nav-h: 56px;
+  --sticky-cta-h: 78px;
+  --touch-min: 46px;
+}
+
+html.is-honor .inst-logo {
+  height: 36px;
+  max-width: 108px;
+}
+
+html.is-honor .inst-title {
+  font-size: 1.08rem;
+}
+
+html.is-honor .inst-kicker {
+  font-size: 10.5px;
+}
+
+html.is-honor .app {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+html.is-honor .card {
+  padding: 14px 12px;
+  border-radius: 14px;
+}
+
+html.is-honor .gauge-wrap .gauge {
+  width: min(252px, 72vw);
+}
+
+html.is-honor .gauge-wrap .gauge-value {
+  font-size: clamp(2rem, 8.5vw, 2.75rem);
+}
+
+html.is-honor .metric .value {
+  font-size: 1.12rem;
+}
+
+html.is-honor .metric .label {
+  font-size: 10.5px;
+}
+
+html.is-honor .metric {
+  padding: 10px 8px;
+}
+
+html.is-honor .btn-primary {
+  font-size: 1rem;
+  min-height: 48px;
+}
+
+html.is-honor .sticky-cta-inner {
+  padding: 7px 10px;
+  gap: 5px;
+}
+
+html.is-honor .sticky-cta-btn {
+  min-height: 46px;
+  font-size: 0.98rem;
+}
+
+html.is-honor .bottom-nav-item {
+  font-size: 10px !important;
+}
+
+html.is-honor .bottom-nav-icon {
+  font-size: 15px !important;
+}
+
+html.is-honor .chip {
+  font-size: 11px;
+  padding: 5px 9px;
+}
+
+html.is-honor .app-select {
+  min-height: 46px;
+  padding: 10px 34px 10px 12px;
+}
+
+html.is-honor .app-select-text {
+  font-size: 15.5px;
+}
+
+html.is-honor .map-frame-hero {
+  min-height: min(44dvh, 340px);
+  max-height: 58dvh;
+}
+
+html.is-honor .field-hint,
+html.is-honor .status-line {
+  font-size: 12.5px;
+}
+
+/* Estrecho genérico (opcional, sin bloquear scroll) */
+html.is-narrow .inst-logo {
+  max-width: 100px;
+}
+
+html.is-narrow .app {
+  padding-left: 10px;
+  padding-right: 10px;
+}
