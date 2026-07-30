@@ -44,8 +44,19 @@ Cada `git push` a `main` redeploya automáticamente si el proyecto está vincula
 | Variable | Descripción |
 |----------|-------------|
 | `NEXT_PUBLIC_EXTRA_SERVERS` | JSON de nodos extra de medición (ver `.env.example`) |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Google Maps Embed (opcional; si no, OSM) |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key de Supabase |
 
-No se requieren API keys para el MVP (Cloudflare Speed es público).
+### Supabase (mediciones multi-dispositivo + admin)
+
+1. Crea un proyecto en [supabase.com](https://supabase.com).
+2. Ejecuta `supabase/schema.sql` en **SQL Editor**.
+3. **Authentication → Users → Add user** (email/password del admin).
+4. Copia **Project URL** y **anon key** a `.env.local` y a Vercel.
+5. Redeploy. Al medir, cada dispositivo sube la prueba; en **Acceso admin** inicias sesión, ves tabla, mapa y descargas CSV/JSON.
+
+El historial local del teléfono sigue existiendo; la nube es el panel central.
 
 ## Qué incluye (v0.2)
 

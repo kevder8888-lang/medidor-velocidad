@@ -4,9 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AggregatesPanel } from "@/components/AggregatesPanel";
 import { BrandFooter } from "@/components/BrandFooter";
 import { BrandHeader } from "@/components/BrandHeader";
+import { AdminPanel } from "@/components/AdminPanel";
 import { MapPanel } from "@/components/MapPanel";
 import { Sparkline } from "@/components/Sparkline";
 import { SplashScreen } from "@/components/SplashScreen";
+import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { saveMeasurementToCloud } from "@/lib/supabase/measurements";
 import type { DeviceGeo } from "@/lib/geo";
 import { formatCoords, getDevicePosition } from "@/lib/geo";
 import {
@@ -85,7 +88,7 @@ function loadPlan(): UserPlan {
   return { downMbps: 100, upMbps: 50, operator: "", technology: "ftth" };
 }
 
-type TabId = "medir" | "mapa" | "historial";
+type TabId = "medir" | "mapa" | "historial" | "admin";
 
 const REPS_KEY = "osiptel_medidor_reps_v1";
 
@@ -403,7 +406,22 @@ export function SpeedTestApp() {
         hist = saved.history;
         setHistory(hist);
         if (!saved.ok) saveOk = false;
+
+        // Nube (Supabase): todos los dispositivos → panel admin
+        let cloudOk = !isSupabaseConfigured(); // si no hay nube, no reportar error
+        let cloudErr = "";
+        if (isSupabaseConfigured()) {
+          const cloud = await saveMeasurementToCloud(enriched);
+          cloudOk = cloud.ok || Boolean(cloud.skipped);
+          if (!cloud.ok && !cloud.skipped) cloudErr = cloud.error;
+        }
+
         last = enriched;
+
+        // mensaje parcial si falla la última subida (se sobrescribe al final de la serie)
+        if (!cloudOk && cloudErr) {
+          setInfo(`Nube: no se pudo subir (${cloudErr}).`);
+        }
       }
 
       if (last) {
@@ -416,13 +434,15 @@ export function SpeedTestApp() {
               : "Prueba completada",
           liveMbps: last.download.medianMbps,
         });
-        setInfo(
-          saveOk
-            ? total > 1
-              ? `${total} mediciones guardadas en el historial.`
-              : "Medición guardada en el historial de este dispositivo."
-            : "Serie terminada, pero hubo un problema al guardar el historial."
-        );
+        const localMsg = saveOk
+          ? total > 1
+            ? `${total} mediciones en historial local`
+            : "Guardada en historial local"
+          : "Problema al guardar historial local";
+        const cloudMsg = isSupabaseConfigured()
+          ? " · enviada a la nube (admin)"
+          : "";
+        setInfo(`${localMsg}${cloudMsg}.`);
       }
 
       try {
@@ -625,9 +645,18 @@ export function SpeedTestApp() {
           >
             Historial ({history.length})
           </button>
+          <button
+            type="button"
+            className={`tab ${tab === "admin" ? "active" : ""}`}
+            onClick={() => setTab("admin")}
+          >
+            Acceso admin
+          </button>
         </div>
 
-        {tab === "historial" ? (
+        {tab === "admin" ? (
+          <AdminPanel />
+        ) : tab === "historial" ? (
           <div className="grid" style={{ gap: 18 }}>
             <section className="card">
               <h2>Agregados</h2>
@@ -1427,7 +1456,7 @@ export function SpeedTestApp() {
         </div>
       )}
 
-      {/* Navegación inferior táctil: Medir | Mapa | Historial */}
+      {/* Navegación inferior: Medir | Mapa | Historial | Admin */}
       <nav className="bottom-nav mobile-only" aria-label="Navegación principal">
         <button
           type="button"
@@ -1441,7 +1470,7 @@ export function SpeedTestApp() {
         </button>
         <button
           type="button"
-          className={`bottom-nav-item bottom-nav-center ${tab === "mapa" ? "active" : ""}`}
+          className={`bottom-nav-item ${tab === "mapa" ? "active" : ""}`}
           onClick={() => setTab("mapa")}
         >
           <span className="bottom-nav-icon" aria-hidden>
@@ -1457,10 +1486,20 @@ export function SpeedTestApp() {
           <span className="bottom-nav-icon" aria-hidden>
             ≡
           </span>
-          <span>Historial</span>
+          <span>Local</span>
           {history.length > 0 && (
             <span className="bottom-nav-badge">{history.length}</span>
           )}
+        </button>
+        <button
+          type="button"
+          className={`bottom-nav-item ${tab === "admin" ? "active" : ""}`}
+          onClick={() => setTab("admin")}
+        >
+          <span className="bottom-nav-icon" aria-hidden>
+            ⚙
+          </span>
+          <span>Admin</span>
         </button>
       </nav>
 

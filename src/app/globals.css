@@ -1436,13 +1436,13 @@ code {
     border-top: 1px solid var(--border);
     box-shadow: 0 -4px 20px rgba(0, 61, 122, 0.08);
     display: grid !important;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
     padding-left: var(--safe-left);
     padding-right: var(--safe-right);
   }
 
-  .bottom-nav-center .bottom-nav-icon {
-    font-size: 20px;
+  .bottom-nav-item {
+    font-size: 11px !important;
   }
 
   .bottom-nav-item {
@@ -1843,6 +1843,60 @@ code {
 
 .map-help-details code {
   font-size: 0.85em;
+}
+
+/* Admin */
+.admin-login-card {
+  max-width: 420px;
+}
+
+.admin-env-list {
+  margin: 10px 0 12px 18px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.admin-table-wrap {
+  overflow: auto;
+  max-height: min(60dvh, 520px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-top: 10px;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #eef3f9;
+  white-space: nowrap;
+}
+
+.admin-table th {
+  position: sticky;
+  top: 0;
+  background: var(--osiptel-surface);
+  color: var(--osiptel-blue);
+  font-weight: 700;
+  z-index: 1;
+}
+
+.admin-table tbody tr {
+  cursor: pointer;
+}
+
+.admin-table tbody tr:hover {
+  background: rgba(0, 86, 172, 0.04);
+}
+
+.admin-row-selected {
+  background: rgba(0, 86, 172, 0.1) !important;
 }
 
 /* ISP card */
