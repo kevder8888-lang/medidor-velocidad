@@ -4,9 +4,23 @@ export const HONOR_SCALE_DEFAULT = 0.7;
 export const HONOR_SCALE_MIN = 0.55;
 const STORAGE_KEY = "osiptel-honor-ui-scale";
 
+/**
+ * Google Chrome en Android NO incluye la marca ("Honor"/"MagicOS") en su
+ * User-Agent — solo el código de modelo interno, ej.:
+ * "Mozilla/5.0 (Linux; Android 14; FNE-NX9) AppleWebKit/537.36 ...".
+ * Por eso el chequeo por marca nunca detectaba un Honor 70 real: is-honor
+ * jamás se aplicaba y ningún fix de zoom llegaba a ejecutarse.
+ * Se agregan códigos de modelo Honor conocidos; sumar más aquí si se
+ * reportan otros equipos (el modelo se puede pedir al usuario o leerse
+ * desde navigator.userAgentData.getHighEntropyValues(["model"])).
+ */
+const HONOR_MODEL_CODES =
+  /\bFNE-(NX9|AN00|LX1)\b|\bCRT-(NX1|N09|LX1)\b|\bREA-(NX9|AN00)\b|\bANY-(NX1|LX1|AN00)\b/i;
+
 export function isHonorUa(ua = typeof navigator !== "undefined" ? navigator.userAgent : ""): boolean {
   if (/XiaoMi|Xiaomi|Redmi|POCO|MIUI|HyperOS/i.test(ua)) return false;
-  return /Honor|HONOR|Huawei|HUAWEI|HarmonyOS|MagicUI|MagicOS/i.test(ua);
+  if (/Honor|HONOR|Huawei|HUAWEI|HarmonyOS|MagicUI|MagicOS/i.test(ua)) return true;
+  return HONOR_MODEL_CODES.test(ua);
 }
 
 export function readStoredHonorScale(): number {

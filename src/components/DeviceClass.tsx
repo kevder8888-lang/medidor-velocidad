@@ -15,6 +15,10 @@ import {
  * Honor: zoom global persistente en Medir / Mapa / Historial / Admin.
  * Se reafirma al cambiar de pestaña (MagicOS a veces resetea zoom).
  */
+type UaData = {
+  getHighEntropyValues?: (hints: string[]) => Promise<{ model?: string }>;
+};
+
 export function DeviceClass() {
   useEffect(() => {
     const root = document.documentElement;
@@ -27,8 +31,12 @@ export function DeviceClass() {
 
     let intervalId = 0;
     let reassertBound: (() => void) | null = null;
+    let cancelled = false;
 
-    if (isHonor) {
+    const activateHonor = () => {
+      if (cancelled || reassertBound) return; // ya activo
+      root.classList.add("is-honor");
+
       let scale = readStoredHonorScale();
       // Primera visita: medir inflación una sola vez
       if (scale === HONOR_SCALE_DEFAULT) {
@@ -69,6 +77,26 @@ export function DeviceClass() {
 
       // Reafirmación periódica ligera (solo Honor)
       intervalId = window.setInterval(reassertBound, 600);
+    };
+
+    if (isHonor) {
+      activateHonor();
+    } else if (!isXiaomi) {
+      // Chrome en Android puede reducir el UA y ocultar el modelo real
+      // (ej. "FNE-NX9" desaparece del navigator.userAgent). Client Hints
+      // sí expone el modelo real sin depender del string del UA.
+      const uaData = (navigator as unknown as { userAgentData?: UaData })
+        .userAgentData;
+      uaData
+        ?.getHighEntropyValues?.(["model"])
+        .then((info) => {
+          if (!cancelled && info?.model && isHonorUa(info.model)) {
+            activateHonor();
+          }
+        })
+        .catch(() => {
+          /* API no disponible o rechazada: sin cambios */
+        });
     }
 
     const narrow = () => {
@@ -78,6 +106,7 @@ export function DeviceClass() {
     window.addEventListener("resize", narrow);
 
     return () => {
+      cancelled = true;
       window.removeEventListener("resize", narrow);
       if (reassertBound) {
         window.removeEventListener("resize", reassertBound);

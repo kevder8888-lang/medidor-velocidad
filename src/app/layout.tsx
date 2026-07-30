@@ -66,7 +66,7 @@ export default function RootLayout({
           id="honor-ui-scale"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var ua=navigator.userAgent||"";if(/XiaoMi|Xiaomi|Redmi|POCO|MIUI|HyperOS/i.test(ua))return;if(!/Honor|HONOR|Huawei|HUAWEI|HarmonyOS|MagicUI|MagicOS/i.test(ua))return;var s="0.7";try{var k=sessionStorage.getItem("osiptel-honor-ui-scale");if(k&&+k>=0.55&&+k<=0.95)s=k;}catch(e){}var r=document.documentElement;r.classList.add("is-honor");r.style.setProperty("--honor-ui-scale",s);r.style.zoom=s;}catch(e){}})();`,
+            __html: `(function(){try{var ua=navigator.userAgent||"";if(/XiaoMi|Xiaomi|Redmi|POCO|MIUI|HyperOS/i.test(ua))return;var isHonor=/Honor|HONOR|Huawei|HUAWEI|HarmonyOS|MagicUI|MagicOS/i.test(ua)||/\\bFNE-(NX9|AN00|LX1)\\b|\\bCRT-(NX1|N09|LX1)\\b|\\bREA-(NX9|AN00)\\b|\\bANY-(NX1|LX1|AN00)\\b/i.test(ua);if(!isHonor)return;var s="0.7";try{var k=sessionStorage.getItem("osiptel-honor-ui-scale");if(k&&+k>=0.55&&+k<=0.95)s=k;}catch(e){}var r=document.documentElement;r.classList.add("is-honor");r.style.setProperty("--honor-ui-scale",s);r.style.zoom=s;}catch(e){}})();`,
           }}
         />
         <DeviceClass />
