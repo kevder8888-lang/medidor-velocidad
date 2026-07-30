@@ -62,9 +62,8 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: rgba(0, 86, 172, 0.12);
-  /* touch-action solo en botones; en body puede romper scroll en MIUI */
-  padding-left: var(--safe-left);
-  padding-right: var(--safe-right);
+  /* Sin padding horizontal en body: el encabezado debe ir de borde a borde */
+  margin: 0;
 }
 
 a {
@@ -196,19 +195,31 @@ h2.desktop-only {
 
 /* ——— Brand chrome ——— */
 .brand-chrome {
+  /* Ancho completo de pantalla (borde a borde), también en Honor */
+  width: 100%;
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
   background: #fff;
   border-bottom: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
   margin-bottom: 22px;
+  /* safe-area solo como padding interno, no reduce el fondo de color */
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .gov-topbar {
   background: var(--peru-red);
   color: #fff;
+  width: 100%;
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
 }
 
 .gov-topbar-inner {
   max-width: 1120px;
+  width: 100%;
   margin: 0 auto;
   padding: 8px 20px;
   display: flex;
@@ -216,6 +227,7 @@ h2.desktop-only {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+  box-sizing: border-box;
 }
 
 .gov-topbar-brand {
@@ -255,8 +267,12 @@ h2.desktop-only {
 
 .inst-header {
   max-width: 1120px;
+  width: 100%;
   margin: 0 auto;
   padding: 18px 20px 16px;
+  padding-left: max(20px, var(--safe-left));
+  padding-right: max(20px, var(--safe-right));
+  box-sizing: border-box;
 }
 
 .inst-header-inner {
@@ -408,6 +424,9 @@ h2.desktop-only {
   max-width: 1120px;
   margin: 0 auto;
   padding: 0 20px 48px;
+  padding-left: max(20px, var(--safe-left));
+  padding-right: max(20px, var(--safe-right));
+  box-sizing: border-box;
 }
 
 .header {
@@ -2186,27 +2205,44 @@ html.is-honor {
   --touch-min: 46px;
 }
 
+/* Encabezado: NO achicar en Honor — debe verse de lado a lado como en otros equipos */
+html.is-honor .brand-chrome {
+  width: 100%;
+  max-width: none;
+}
+
+html.is-honor .gov-topbar,
+html.is-honor .inst-header {
+  width: 100%;
+}
+
 html.is-honor .inst-logo {
-  height: 36px;
-  max-width: 108px;
+  height: 40px;
+  max-width: 140px;
 }
 
 html.is-honor .inst-title {
-  font-size: 1.08rem;
+  font-size: 1.15rem;
 }
 
 html.is-honor .inst-kicker {
-  font-size: 10.5px;
+  font-size: 11px;
 }
 
+/* Densidad solo en el bloque de medición / contenido, no en el header */
 html.is-honor .app {
-  padding-left: 10px;
-  padding-right: 10px;
+  padding-left: max(10px, var(--safe-left));
+  padding-right: max(10px, var(--safe-right));
 }
 
 html.is-honor .card {
   padding: 14px 12px;
   border-radius: 14px;
+}
+
+html.is-honor .brand-chrome + .app .card,
+html.is-honor .measure-card {
+  /* ok densificar solo cards de medición */
 }
 
 html.is-honor .gauge-wrap .gauge {
@@ -2276,12 +2312,8 @@ html.is-honor .status-line {
   font-size: 12.5px;
 }
 
-/* Estrecho genérico (opcional, sin bloquear scroll) */
-html.is-narrow .inst-logo {
-  max-width: 100px;
-}
-
+/* Estrecho: no comprimir el encabezado de borde a borde */
 html.is-narrow .app {
-  padding-left: 10px;
-  padding-right: 10px;
+  padding-left: max(10px, var(--safe-left));
+  padding-right: max(10px, var(--safe-right));
 }
