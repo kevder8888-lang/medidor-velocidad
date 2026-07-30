@@ -31,7 +31,7 @@ type Props = {
 /**
  * Select propio de la app (no el picker nativo de Android).
  * - Web: lista visible con tipografía de la app
- * - Android/Honor: panel anclado al control (no ocupa todo el ancho del SO)
+ * - Móvil: panel anclado al control (no el picker nativo a pantalla completa)
  */
 export function AppSelect({
   id,

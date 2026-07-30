@@ -261,9 +261,7 @@ h2.desktop-only {
   display: block;
 }
 
-/* ——— Brand chrome (base compartida web + Android) ———
- * Mejoras de Honor: SOLO bajo html.is-honor (final del archivo).
- */
+/* ——— Brand chrome (web + Android, sin overrides por fabricante) ——— */
 .brand-chrome {
   display: block;
   position: relative;
@@ -1239,10 +1237,6 @@ code {
     display: none !important;
   }
 
-  /*
-   * Header móvil genérico (Android / Xiaomi / resto).
-   * NO poner aquí fixes de Honor — van solo en html.is-honor más abajo.
-   */
   .brand-chrome {
     margin-bottom: 12px;
   }
@@ -1300,7 +1294,7 @@ code {
     );
   }
 
-  /* Gauge adaptable a pantallas altas/estrechas (Honor 70 ~360–400px) */
+  /* Gauge adaptable a pantallas altas/estrechas */
   .measure-card {
     padding: 14px 12px;
   }
@@ -2271,166 +2265,7 @@ code {
   }
 }
 
-/**
- * Honor / Huawei (MagicOS): render un poco más “grande”.
- * Densidad ~4–6% más compacta, SIN transform:scale (rompe fixed + scroll).
- * Xiaomi no recibe esta clase → no se toca su scroll.
- */
-html.is-honor {
-  --bottom-nav-h: 56px;
-  --sticky-cta-h: 78px;
-  --touch-min: 46px;
-}
-
-/*
- * ═══════════════════════════════════════════════════════════
- * HONOR / HUAWEI / MagicOS ONLY  (html.is-honor)
- * No aplica a Android genérico ni Xiaomi (sin clase is-honor).
- * ═══════════════════════════════════════════════════════════
- */
-
-/* Header: ancho de pantalla + título completo "Medidor de velocidad" */
-html.is-honor .brand-chrome {
-  width: 100%;
-  max-width: none;
-  margin-bottom: 12px;
-  overflow: visible;
-}
-
-html.is-honor .gov-topbar,
-html.is-honor .inst-header-band {
-  width: 100%;
-}
-
-html.is-honor .gov-topbar-inner {
-  padding: 8px max(12px, var(--safe-left)) 8px max(12px, var(--safe-right));
-  padding-top: max(8px, var(--safe-top));
-}
-
-html.is-honor .inst-header {
-  padding: 12px max(12px, var(--safe-left)) 10px max(12px, var(--safe-right));
-}
-
-html.is-honor .inst-header-inner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-}
-
-html.is-honor .inst-logo-link {
-  flex: 0 0 auto;
-}
-
-html.is-honor .inst-logo {
-  height: 40px;
-  max-width: 110px;
-}
-
-/* Título en su propia franja a todo el ancho del menú inferior */
-html.is-honor .inst-title-block {
-  flex: 1 1 100%;
-  min-width: 0;
-  max-width: 100%;
-}
-
-html.is-honor .inst-kicker {
-  font-size: 11px;
-}
-
-html.is-honor .inst-title {
-  font-size: 1.2rem;
-  line-height: 1.3;
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
-  word-break: normal;
-  overflow-wrap: break-word;
-}
-
-html.is-honor .app {
-  padding-left: max(10px, var(--safe-left));
-  padding-right: max(10px, var(--safe-right));
-}
-
-html.is-honor .card {
-  padding: 14px 12px;
-  border-radius: 14px;
-}
-
-html.is-honor .gauge-wrap .gauge {
-  width: min(252px, 72vw);
-}
-
-html.is-honor .gauge-wrap .gauge-value {
-  font-size: clamp(2rem, 8.5vw, 2.75rem);
-}
-
-html.is-honor .metric .value {
-  font-size: 1.12rem;
-}
-
-html.is-honor .metric .label {
-  font-size: 10.5px;
-}
-
-html.is-honor .metric {
-  padding: 10px 8px;
-}
-
-html.is-honor .btn-primary {
-  font-size: 1rem;
-  min-height: 48px;
-}
-
-html.is-honor .sticky-cta-inner {
-  padding: 7px 10px;
-  gap: 5px;
-}
-
-html.is-honor .sticky-cta-btn {
-  min-height: 46px;
-  font-size: 0.98rem;
-}
-
-html.is-honor .bottom-nav-item {
-  font-size: 10px !important;
-}
-
-html.is-honor .bottom-nav-icon {
-  font-size: 15px !important;
-}
-
-html.is-honor .chip {
-  font-size: 11px;
-  padding: 5px 9px;
-}
-
-html.is-honor .app-select-trigger {
-  min-height: 46px;
-  padding: 10px 34px 10px 12px;
-}
-
-html.is-honor .app-select-text {
-  font-size: 15.5px;
-}
-
-html.is-honor .app-select-option {
-  min-height: 46px;
-  font-size: 15.5px;
-}
-
-html.is-honor .map-frame-hero {
-  min-height: min(44dvh, 340px);
-  max-height: 58dvh;
-}
-
-html.is-honor .field-hint,
-html.is-honor .status-line {
-  font-size: 12.5px;
-}
-
-/* Estrecho: no comprimir el encabezado de borde a borde */
+/* Pantallas muy estrechas (<380px): padding del contenido */
 html.is-narrow .app {
   padding-left: max(10px, var(--safe-left));
   padding-right: max(10px, var(--safe-right));
