@@ -62,8 +62,10 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: rgba(0, 86, 172, 0.12);
-  /* Sin padding horizontal en body: el encabezado debe ir de borde a borde */
+  /* Sin padding horizontal: BrandHeader (rojo + blanco) va de borde a borde */
   margin: 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 a {
@@ -193,36 +195,35 @@ h2.desktop-only {
   display: block;
 }
 
-/* ——— Brand chrome (borde a borde en todos los Android, incl. Honor) ——— */
+/* ——— Brand chrome (borde a borde: franja roja + banda blanca) ———
+ * BrandHeader vive FUERA de .app (sin padding lateral).
+ * No usar 100vw + margin negativo: en Honor/MagicOS desborda y clip deja
+ * franjas laterales con el fondo azul del body.
+ */
 .brand-chrome {
-  /*
-   * Full-bleed: 100vw anclado al viewport, no al contenedor padre.
-   * Evita franjas laterales en MagicOS / MIUI cuando hay padding o zoom.
-   */
+  display: block;
   position: relative;
-  width: 100vw;
-  max-width: 100vw;
-  left: 50%;
-  right: auto;
-  margin-left: -50vw;
-  margin-right: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0 0 22px;
+  padding: 0;
   box-sizing: border-box;
-  background: #fff;
+  background-color: #fff;
   border-bottom: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
-  margin-bottom: 22px;
-  margin-top: 0;
-  padding: 0;
-  overflow-x: clip;
 }
 
+/* Franja roja gob.pe: color de borde a borde del viewport */
 .gov-topbar {
-  background: var(--peru-red);
-  color: #fff;
+  display: block;
   width: 100%;
-  box-sizing: border-box;
-  /* El color rojo llega a los bordes; el safe-area va en el inner */
+  margin: 0;
   padding: 0;
+  box-sizing: border-box;
+  background-color: var(--peru-red);
+  color: #fff;
 }
 
 .gov-topbar-inner {
@@ -238,10 +239,14 @@ h2.desktop-only {
   box-sizing: border-box;
 }
 
+/* Banda blanca OSIPTEL: fondo blanco de borde a borde */
 .inst-header-band {
+  display: block;
   width: 100%;
-  background: #fff;
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
+  background-color: #fff;
 }
 
 .gov-topbar-brand {
@@ -1176,11 +1181,10 @@ code {
   }
 
   .brand-chrome {
-    margin-bottom: 12px;
-    width: 100vw;
-    max-width: 100vw;
-    left: 50%;
-    margin-left: -50vw;
+    width: 100%;
+    max-width: none;
+    left: 0;
+    margin: 0 0 12px;
   }
 
   .gov-topbar-inner {
@@ -1189,7 +1193,7 @@ code {
   }
 
   .inst-header {
-    padding: 14px max(14px, var(--safe-left)) 12px max(14px, var(--safe-right));
+    padding: 12px max(14px, var(--safe-left)) 10px max(14px, var(--safe-right));
   }
 
   .gov-escudo {
@@ -1202,10 +1206,6 @@ code {
 
   .gov-topbar-label {
     font-size: 11px;
-  }
-
-  .inst-header {
-    padding: 12px 14px 10px;
   }
 
   .inst-header-inner {
@@ -2225,17 +2225,11 @@ html.is-honor {
   --touch-min: 46px;
 }
 
-/* Honor: encabezado full-bleed reforzado; densificar solo medición */
-html.is-honor .brand-chrome {
-  width: 100vw;
-  max-width: 100vw;
-  left: 50%;
-  margin-left: -50vw;
-}
-
+/* Honor: no tocar full-bleed del header (ya es 100% del body); densificar logos */
 html.is-honor .gov-topbar,
 html.is-honor .inst-header-band {
   width: 100%;
+  display: block;
 }
 
 html.is-honor .inst-logo {
