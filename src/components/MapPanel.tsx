@@ -57,110 +57,76 @@ export function MapPanel({
 
   return (
     <div className="map-panel">
-      <section className="card">
-        <div className="card-head">
-          <h2 style={{ marginBottom: 0 }}>Mapa de medición</h2>
+      <section className="card map-hero-card">
+        <div className="map-hero-head">
+          <div>
+            <h2 className="map-hero-title">Mapa</h2>
+            <p className="map-hero-sub">
+              GPS del dispositivo · {provider}
+            </p>
+          </div>
           <button
             type="button"
-            className="btn btn-secondary"
+            className="btn btn-ghost map-gps-btn"
             onClick={() => void locate()}
             disabled={loading}
           >
-            {loading ? "Ubicando…" : "Actualizar GPS"}
+            {loading ? "…" : "↻ GPS"}
           </button>
         </div>
 
-        <p className="field-hint" style={{ marginBottom: 12 }}>
-          Coordenadas del <strong>dispositivo</strong> (GPS Android). Mapa:{" "}
-          <strong>{provider}</strong>
-          {!usingGoogle && (
-            <>
-              {" "}
-              · Para Google Maps configura{" "}
-              <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> en Vercel / .env.local
-            </>
-          )}
-        </p>
+        {error && <div className="error-box">{error}</div>}
 
-        {usingGoogle && (
-          <div className="info-box" style={{ marginBottom: 12, fontSize: 13 }}>
-            Si ves <em>“not authorized to use this API key”</em> en Android:
-            en Google Cloud la key debe ser de tipo <strong>Sitios web (HTTP
-            referrers)</strong>, no “Aplicaciones Android”, e incluir{" "}
-            <code>https://medidor-velocidad-pi.vercel.app/*</code> y{" "}
-            <code>http://localhost:3000/*</code>. Activa también{" "}
-            <strong>Maps Embed API</strong>. Espera 1–5 min tras guardar.
+        {/* Protagonista: el mapa primero y grande */}
+        {geo ? (
+          <div className="map-frame-wrap map-frame-hero">
+            <iframe
+              title={`Mapa ${provider}`}
+              className="map-frame"
+              src={mapEmbedUrl(geo.latitude, geo.longitude)}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            />
+          </div>
+        ) : (
+          <div className="map-frame-wrap map-frame-hero map-frame-empty">
+            <p className="muted-p" style={{ padding: 16, textAlign: "center" }}>
+              {loading
+                ? "Obteniendo ubicación…"
+                : "Pulsa «↻ GPS» y acepta el permiso de ubicación."}
+            </p>
           </div>
         )}
 
-        {error && <div className="error-box">{error}</div>}
-
-        {geo ? (
-          <>
-            <div className="kv" style={{ marginBottom: 12 }}>
-              <div className="kv-row">
-                <span className="k">Latitud / longitud</span>
-                <span className="v mono">
-                  {formatCoords(geo.latitude, geo.longitude)}
-                </span>
-              </div>
-              <div className="kv-row">
-                <span className="k">Precisión</span>
-                <span className="v">
-                  {geo.accuracyM != null
-                    ? `± ${Math.round(geo.accuracyM)} m`
-                    : "—"}
-                  {geo.source === "device_gps"
-                    ? " · GPS"
-                    : geo.source === "device_network"
-                      ? " · red"
-                      : ""}
-                </span>
-              </div>
-              <div className="kv-row">
-                <span className="k">Capturado</span>
-                <span className="v">
-                  {new Date(geo.timestamp).toLocaleString("es-PE")}
-                </span>
-              </div>
-            </div>
-
-            <div className="map-frame-wrap">
-              <iframe
-                title={`Mapa ${provider}`}
-                className="map-frame"
-                src={mapEmbedUrl(geo.latitude, geo.longitude)}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                allowFullScreen
-              />
-            </div>
-
-            <p style={{ marginTop: 10, fontSize: 13 }}>
-              <a
-                href={mapExternalUrl(geo.latitude, geo.longitude)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Abrir en {provider}
-              </a>
-            </p>
-          </>
-        ) : (
-          !loading && (
-            <p className="muted-p">
-              Pulsa «Actualizar GPS» y acepta el permiso de ubicación en Android.
-            </p>
-          )
+        {geo && (
+          <div className="map-meta-bar">
+            <span className="mono">
+              {formatCoords(geo.latitude, geo.longitude)}
+            </span>
+            <span className="map-meta-sep">·</span>
+            <span>
+              {geo.accuracyM != null
+                ? `±${Math.round(geo.accuracyM)} m`
+                : "prec. N/D"}
+            </span>
+            <span className="map-meta-sep">·</span>
+            <a
+              href={mapExternalUrl(geo.latitude, geo.longitude)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Abrir
+            </a>
+          </div>
         )}
       </section>
 
-      <section className="card" style={{ marginTop: 14 }}>
-        <h2>Puntos de mediciones previas</h2>
+      <section className="card" style={{ marginTop: 12 }}>
+        <h2>Puntos de mediciones</h2>
         {points.length === 0 ? (
           <p className="muted-p">
-            Aún no hay mediciones con coordenadas. Al medir se intentará capturar
-            el GPS del equipo.
+            Aún no hay mediciones con coordenadas.
           </p>
         ) : (
           <div className="history-list">
@@ -197,6 +163,21 @@ export function MapPanel({
           </div>
         )}
       </section>
+
+      {/* Ayuda al final — no compite con el mapa */}
+      {usingGoogle && (
+        <details className="map-help-details">
+          <summary>Ayuda: error de API key</summary>
+          <p>
+            Si ves <em>“not authorized to use this API key”</em>: en Google Cloud
+            la key debe ser de tipo <strong>Sitios web (HTTP referrers)</strong>,
+            no “Aplicaciones Android”, e incluir{" "}
+            <code>https://medidor-velocidad-pi.vercel.app/*</code> y{" "}
+            <code>http://localhost:3000/*</code>. Activa{" "}
+            <strong>Maps Embed API</strong> y espera 1–5 min.
+          </p>
+        </details>
+      )}
     </div>
   );
 }

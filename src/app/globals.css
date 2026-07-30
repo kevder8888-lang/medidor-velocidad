@@ -1732,7 +1732,40 @@ code {
   margin-bottom: 8px;
 }
 
-/* Mapa */
+/* Mapa — el mapa es el protagonista */
+.map-hero-card {
+  padding: 12px 12px 10px;
+}
+
+.map-hero-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.map-hero-title {
+  margin: 0 !important;
+  font-size: 0.95rem !important;
+  letter-spacing: 0.04em;
+}
+
+.map-hero-sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.map-gps-btn {
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  min-height: 36px !important;
+  border-radius: 999px !important;
+  flex-shrink: 0;
+}
+
 .map-frame-wrap {
   position: relative;
   width: 100%;
@@ -1744,11 +1777,72 @@ code {
   min-height: 220px;
 }
 
+.map-frame-hero {
+  aspect-ratio: 1 / 1.05;
+  min-height: min(52dvh, 420px);
+  max-height: 70dvh;
+}
+
+.map-frame-empty {
+  display: grid;
+  place-items: center;
+}
+
 .map-frame {
   width: 100%;
   height: 100%;
   border: 0;
   display: block;
+}
+
+.map-meta-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.map-meta-sep {
+  opacity: 0.5;
+}
+
+.map-help-details {
+  margin-top: 12px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px dashed var(--border);
+  background: #fff;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.map-help-details summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text-muted);
+  list-style: none;
+}
+
+.map-help-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.map-help-details[open] summary {
+  margin-bottom: 8px;
+  color: var(--osiptel-blue);
+}
+
+.map-help-details p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.map-help-details code {
+  font-size: 0.85em;
 }
 
 /* ISP card */
