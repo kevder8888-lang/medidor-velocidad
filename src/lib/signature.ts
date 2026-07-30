@@ -12,6 +12,19 @@ export function buildSignPayload(
     finishedAt: result.finishedAt,
     selectedServer: result.selectedServer,
     plan: result.plan,
+    operator: result.plan?.operator ?? null,
+    geo: result.geo
+      ? {
+          latitude: result.geo.latitude,
+          longitude: result.geo.longitude,
+          accuracyM: result.geo.accuracyM,
+          timestamp: result.geo.timestamp,
+          source: result.geo.source,
+        }
+      : null,
+    networkAccess: result.networkIdentity?.access ?? null,
+    ispBrand: result.networkIdentity?.isp.brand ?? null,
+    ispDisplay: result.networkIdentity?.isp.displayName ?? null,
     latency: {
       medianMs: result.latency.medianMs,
       jitterMs: result.latency.jitterMs,

@@ -202,6 +202,31 @@ function buildReportHtml(
     <tr><th>Bufferbloat (Δ)</th><td>${result.bufferbloatMs != null ? "+" + formatMs(result.bufferbloatMs) + " ms" : "—"}</td></tr>
   </table>
 
+  <h2>Registro de la medición</h2>
+  <table>
+    <tr><th>Fecha y hora</th><td>${escapeHtml(finished)}</td></tr>
+    <tr><th>Operador</th><td>${escapeHtml(result.plan?.operator || result.networkIdentity?.isp.displayName || "—")}</td></tr>
+    <tr><th>Bajada (DL)</th><td>${formatMbps(safeNum(download.medianMbps))} Mbps</td></tr>
+    <tr><th>Subida (UL)</th><td>${formatMbps(safeNum(upload.medianMbps))} Mbps</td></tr>
+    <tr><th>Latencia / jitter</th><td>${formatMs(safeNum(latency.medianMs))} ms / ${formatMs(safeNum(latency.jitterMs))} ms</td></tr>
+    <tr><th>Ubicación (GPS dispositivo)</th><td class="mono">${
+      result.geo
+        ? escapeHtml(
+            `${result.geo.latitude.toFixed(6)}, ${result.geo.longitude.toFixed(6)}${
+              result.geo.accuracyM != null
+                ? ` (±${Math.round(result.geo.accuracyM)} m)`
+                : ""
+            }`
+          )
+        : "No capturada"
+    }</td></tr>
+    <tr><th>Hora GPS / fuente</th><td>${escapeHtml(
+      result.geo
+        ? `${result.geo.timestamp || "—"} · ${result.geo.source || "—"}`
+        : "—"
+    )}</td></tr>
+  </table>
+
   <h2>Servidor y entorno</h2>
   <table>
     <tr><th>Servidor</th><td>${escapeHtml(result.selectedServer?.name || "—")} (${escapeHtml(result.selectedServer?.region || "")})</td></tr>

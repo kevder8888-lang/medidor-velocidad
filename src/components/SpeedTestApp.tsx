@@ -8,7 +8,12 @@ import { MapPanel } from "@/components/MapPanel";
 import { Sparkline } from "@/components/Sparkline";
 import { SplashScreen } from "@/components/SplashScreen";
 import type { DeviceGeo } from "@/lib/geo";
-import { getDevicePosition } from "@/lib/geo";
+import { formatCoords, getDevicePosition } from "@/lib/geo";
+import {
+  deviceGeoToResultGeo,
+  summarizeMeasurement,
+  withResolvedPlan,
+} from "@/lib/measurementRecord";
 import {
   clearHistory,
   downloadTextFile,
@@ -295,26 +300,43 @@ export function SpeedTestApp() {
       /* ignore */
     }
 
-    // GPS del equipo (Android / navegador) — best effort, no bloquea la medición
-    let geoCapture: DeviceGeo | null = deviceGeo;
-    try {
-      geoCapture = await getDevicePosition({
-        highAccuracy: true,
-        timeoutMs: 12_000,
-      });
-      setDeviceGeo(geoCapture);
-    } catch {
-      /* permiso denegado o timeout: se mide igual */
-    }
-
     const wake = await requestWakeLock();
     let last: SpeedTestResult | null = null;
     let saveOk = true;
     let hist = loadHistory();
+    let geoFailNote: string | null = null;
 
     try {
       for (let i = 0; i < total; i++) {
         setRepProgress({ current: i + 1, total });
+
+        // Ubicación actual del dispositivo en CADA medición (hora GPS fresca)
+        let geoCapture: DeviceGeo | null = null;
+        try {
+          onProgress({
+            phase: "precheck",
+            progress: (i / total) * 100 + 1,
+            message:
+              total > 1
+                ? `Repetición ${i + 1}/${total} · Obteniendo ubicación GPS…`
+                : "Obteniendo ubicación GPS del dispositivo…",
+          });
+          geoCapture = await getDevicePosition({
+            highAccuracy: true,
+            timeoutMs: 15_000,
+            maximumAgeMs: 0, // forzar lectura actual, no caché vieja
+          });
+          setDeviceGeo(geoCapture);
+          geoFailNote = null;
+        } catch (geoErr) {
+          geoFailNote =
+            geoErr instanceof Error
+              ? geoErr.message
+              : "Sin GPS del dispositivo";
+          // reutilizar última conocida solo si existe
+          geoCapture = deviceGeo;
+        }
+
         const res = await runSpeedTest(
           plan,
           (ev) => {
@@ -332,28 +354,39 @@ export function SpeedTestApp() {
           serverPref as "auto" | string
         );
 
+        const measuredAt = res.finishedAt || new Date().toISOString();
+        const geo = geoCapture
+          ? {
+              ...deviceGeoToResultGeo(geoCapture),
+              // alinear sello de tiempo con el fin de la medición
+              timestamp: measuredAt,
+            }
+          : null;
+
+        const resolvedPlan = withResolvedPlan(res, plan);
+
         const enriched: SpeedTestResult = {
           ...res,
-          geo: geoCapture
-            ? {
-                latitude: geoCapture.latitude,
-                longitude: geoCapture.longitude,
-                accuracyM: geoCapture.accuracyM,
-                altitudeM: geoCapture.altitudeM,
-                timestamp: geoCapture.timestamp,
-                source: geoCapture.source,
-              }
-            : null,
+          finishedAt: measuredAt,
+          plan: resolvedPlan,
+          geo,
           runIndex: i + 1,
           runTotal: total,
           notes: [
             ...res.notes,
             total > 1 ? `Serie: repetición ${i + 1} de ${total}.` : null,
-            geoCapture
-              ? `GPS dispositivo: ${geoCapture.latitude.toFixed(5)}, ${geoCapture.longitude.toFixed(5)} (±${Math.round(geoCapture.accuracyM ?? 0)} m).`
-              : "Sin coordenadas del dispositivo (permiso GPS no concedido o no disponible).",
+            geo
+              ? `Ubicación guardada: ${formatCoords(geo.latitude, geo.longitude)} (${geo.accuracyM != null ? `±${Math.round(geo.accuracyM)} m` : "precisión N/D"}) · ${new Date(measuredAt).toLocaleString("es-PE")}.`
+              : `Sin ubicación GPS: ${geoFailNote || "permiso denegado o no disponible"}.`,
+            `Operador: ${resolvedPlan.operator || "—"}.`,
+            `↓ ${res.download.medianMbps} Mbps · ↑ ${res.upload.medianMbps} Mbps · lat ${res.latency.medianMs} ms.`,
           ].filter(Boolean) as string[],
         };
+
+        // sincronizar plan UI si se rellenó operador
+        if (resolvedPlan.operator && !plan.operator?.trim()) {
+          setPlan((p) => ({ ...p, operator: resolvedPlan.operator }));
+        }
 
         setResult(enriched);
         setProbes(enriched.serverProbes ?? []);
@@ -651,7 +684,9 @@ export function SpeedTestApp() {
                 </p>
               ) : (
                 <div className="history-list history-list-actions" style={{ marginTop: 12 }}>
-                  {history.map((h) => (
+                  {history.map((h) => {
+                    const s = summarizeMeasurement(h);
+                    return (
                     <div className="history-item history-item-row" key={h.id}>
                       <button
                         type="button"
@@ -664,32 +699,26 @@ export function SpeedTestApp() {
                         }}
                       >
                         <div className="when">
-                          {h.finishedAt
-                            ? new Date(h.finishedAt).toLocaleString("es-PE")
-                            : "—"}{" "}
-                          · conf. {h.confidence?.score ?? "—"}
+                          <strong>{s.time}</strong>
                           {h.cvm
                             ? h.cvm.meetsCvm
                               ? " · CVM OK"
                               : " · CVM NO"
                             : ""}
-                          {h.confidence && !h.confidence.validForRegulatoryCvm
-                            ? " · no regulatorio"
+                          {h.runTotal && h.runTotal > 1
+                            ? ` · rep ${h.runIndex}/${h.runTotal}`
                             : ""}
                         </div>
                         <div className="nums">
-                          ↓ {formatMbps(h.download?.medianMbps ?? 0)} · ↑{" "}
-                          {formatMbps(h.upload?.medianMbps ?? 0)} ·{" "}
-                          {formatMs(h.latency?.medianMs ?? 0)} ms
-                          {h.selectedServer
-                            ? ` · ${h.selectedServer.name}`
-                            : ""}
+                          {s.operator} · ↓ {formatMbps(s.downMbps)} · ↑{" "}
+                          {formatMbps(s.upMbps)} · {formatMs(s.latencyMs)} ms
                         </div>
-                        {h.signature?.hash && (
-                          <div className="when mono">
-                            sha {shortHash(h.signature.hash, 12)}
-                          </div>
-                        )}
+                        <div className="when mono">
+                          {s.coords
+                            ? `📍 ${s.coords}${s.accuracy ? ` (${s.accuracy})` : ""}`
+                            : "📍 sin GPS"}
+                          {s.access ? ` · ${s.access}` : ""}
+                        </div>
                       </button>
                       <div className="history-actions">
                         <span className="history-cvm">
@@ -738,7 +767,8 @@ export function SpeedTestApp() {
                         </button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </section>
@@ -875,6 +905,56 @@ export function SpeedTestApp() {
               <div id="results-anchor" />
               {error && <div className="error-box">{error}</div>}
               {info && <div className="info-box">{info}</div>}
+
+              {result && (
+                <div className="record-snapshot">
+                  <div className="record-snapshot-title">Registro guardado</div>
+                  <div className="kv">
+                    <div className="kv-row">
+                      <span className="k">Hora</span>
+                      <span className="v">
+                        {new Date(result.finishedAt).toLocaleString("es-PE")}
+                      </span>
+                    </div>
+                    <div className="kv-row">
+                      <span className="k">Operador</span>
+                      <span className="v">
+                        {result.plan?.operator ||
+                          result.networkIdentity?.isp.displayName ||
+                          "—"}
+                      </span>
+                    </div>
+                    <div className="kv-row">
+                      <span className="k">↓ DL / ↑ UL</span>
+                      <span className="v">
+                        {formatMbps(result.download?.medianMbps ?? 0)} /{" "}
+                        {formatMbps(result.upload?.medianMbps ?? 0)} Mbps
+                      </span>
+                    </div>
+                    <div className="kv-row">
+                      <span className="k">Latencia</span>
+                      <span className="v">
+                        {formatMs(result.latency?.medianMs ?? 0)} ms
+                        {result.latency?.jitterMs != null
+                          ? ` · jitter ${formatMs(result.latency.jitterMs)}`
+                          : ""}
+                      </span>
+                    </div>
+                    <div className="kv-row">
+                      <span className="k">Ubicación</span>
+                      <span className="v mono">
+                        {result.geo
+                          ? `${formatCoords(result.geo.latitude, result.geo.longitude)}${
+                              result.geo.accuracyM != null
+                                ? ` ±${Math.round(result.geo.accuracyM)} m`
+                                : ""
+                            }`
+                          : "No capturada (activa GPS y permisos)"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {result && (
                 <div className="btn-row export-row" style={{ marginTop: 14 }}>

@@ -1714,6 +1714,24 @@ code {
     0 0 0 2px rgba(0, 121, 193, 0.2);
 }
 
+/* Snapshot de registro tras medir */
+.record-snapshot {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--osiptel-surface);
+}
+
+.record-snapshot-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--osiptel-blue);
+  margin-bottom: 8px;
+}
+
 /* Mapa */
 .map-frame-wrap {
   position: relative;
