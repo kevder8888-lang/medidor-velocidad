@@ -11,7 +11,7 @@ export function BrandHeader({
 
   return (
     <div className="brand-chrome">
-      {/* Franja roja: fondo de borde a borde */}
+      {/* Franja roja: mismo ancho que cards / barra Iniciar medición */}
       <div className="gov-topbar">
         <div className="gov-topbar-inner">
           <a
@@ -40,7 +40,7 @@ export function BrandHeader({
         </div>
       </div>
 
-      {/* Banda blanca: fondo de borde a borde; contenido con padding */}
+      {/* Banda blanca OSIPTEL */}
       <div className="inst-header-band">
         <header className="inst-header">
           <div className="inst-header-inner">

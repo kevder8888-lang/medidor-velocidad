@@ -62,7 +62,7 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: rgba(0, 86, 172, 0.12);
-  /* Sin padding horizontal: BrandHeader (rojo + blanco) va de borde a borde */
+  /* Sin padding horizontal en body; el eje visual lo marca .app */
   margin: 0;
   width: 100%;
   max-width: 100%;
@@ -92,10 +92,16 @@ select {
 }
 
 /**
- * AppSelect: texto con tipografía de la app + picker nativo Android/iOS.
- * El SO dibuja la lista desplegable; el valor cerrado se ve con nuestra letra.
+ * AppSelect: menú propio (no picker nativo Android).
+ * Trigger con tipografía de la app; lista portal con opciones legibles.
  */
 .app-select {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.app-select-trigger {
   position: relative;
   display: flex;
   align-items: center;
@@ -105,18 +111,30 @@ select {
   border-radius: 12px;
   border: 1px solid var(--border);
   background: #fbfcfe;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.app-select:focus-within {
+.app-select-trigger:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: #fff;
+}
+
+.app-select.is-open .app-select-trigger,
+.app-select-trigger:focus {
+  outline: none;
   border-color: var(--osiptel-blue);
   box-shadow: 0 0 0 3px var(--accent-glow);
   background: #fff;
 }
 
-.app-select.is-disabled {
+.app-select.is-disabled .app-select-trigger,
+.app-select-trigger:disabled {
   opacity: 0.55;
-  pointer-events: none;
+  cursor: not-allowed;
 }
 
 .app-select-text {
@@ -130,7 +148,6 @@ select {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  pointer-events: none;
 }
 
 .app-select-chevron {
@@ -142,31 +159,80 @@ select {
   color: var(--text-muted);
   pointer-events: none;
   line-height: 1;
+  transition: transform 0.15s ease;
 }
 
-.app-select-native {
-  position: absolute;
+.app-select.is-open .app-select-chevron {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.app-select-backdrop {
+  position: fixed;
   inset: 0;
-  width: 100%;
-  height: 100%;
+  z-index: 70;
+  background: rgba(15, 35, 60, 0.28);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-select-menu {
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0, 61, 122, 0.18);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+}
+
+.app-select-menu li {
   margin: 0;
   padding: 0;
-  opacity: 0.01; /* casi invisible pero usable por el SO / accesibilidad */
-  border: none;
-  background: transparent;
-  font-size: 16px; /* evita zoom en Android al abrir */
-  color: transparent;
-  cursor: pointer;
-  -webkit-appearance: none;
-  appearance: none;
+  list-style: none;
 }
 
-.app-select-native:focus {
+.app-select-option {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: left;
+  line-height: 1.35;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-select-option:hover:not(:disabled),
+.app-select-option:focus {
   outline: none;
+  background: var(--osiptel-surface);
+  color: var(--osiptel-blue-dark);
+}
+
+.app-select-option.is-selected {
+  background: rgba(0, 86, 172, 0.1);
+  color: var(--osiptel-blue-dark);
+  font-weight: 700;
+}
+
+.app-select-option:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* Legacy bare <select> en fields (fallback) */
-.field > select:not(.app-select-native) {
+.field > select {
   width: 100%;
   min-height: var(--touch-min, 48px);
   padding: 12px 14px;
@@ -195,27 +261,26 @@ h2.desktop-only {
   display: block;
 }
 
-/* ——— Brand chrome (borde a borde: franja roja + banda blanca) ———
- * BrandHeader vive FUERA de .app (sin padding lateral).
- * No usar 100vw + margin negativo: en Honor/MagicOS desborda y clip deja
- * franjas laterales con el fondo azul del body.
+/* ——— Brand chrome ———
+ * Dentro de .app: mismo eje horizontal que el contenido y que
+ * sticky-cta-inner (barra «Iniciar medición»). Sin breakout 100vw.
  */
 .brand-chrome {
   display: block;
   position: relative;
-  left: 0;
-  right: 0;
   width: 100%;
-  max-width: none;
-  margin: 0 0 22px;
+  max-width: 100%;
+  margin: 0 0 18px;
   padding: 0;
   box-sizing: border-box;
   background-color: #fff;
-  border-bottom: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: 14px;
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
-/* Franja roja gob.pe: color de borde a borde del viewport */
+/* Franja roja gob.pe: ancho del card (= columna de medición / CTA) */
 .gov-topbar {
   display: block;
   width: 100%;
@@ -227,10 +292,9 @@ h2.desktop-only {
 }
 
 .gov-topbar-inner {
-  max-width: 1120px;
   width: 100%;
-  margin: 0 auto;
-  padding: 8px max(16px, var(--safe-left)) 8px max(16px, var(--safe-right));
+  margin: 0;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -239,7 +303,7 @@ h2.desktop-only {
   box-sizing: border-box;
 }
 
-/* Banda blanca OSIPTEL: fondo blanco de borde a borde */
+/* Banda blanca OSIPTEL */
 .inst-header-band {
   display: block;
   width: 100%;
@@ -285,10 +349,9 @@ h2.desktop-only {
 }
 
 .inst-header {
-  max-width: 1120px;
   width: 100%;
-  margin: 0 auto;
-  padding: 18px max(16px, var(--safe-left)) 16px max(16px, var(--safe-right));
+  margin: 0;
+  padding: 16px 14px 14px;
   box-sizing: border-box;
 }
 
@@ -1180,28 +1243,28 @@ code {
     display: none !important;
   }
 
+  /* Mismo ancho que cards / sticky-cta-inner (padding .app 12px) */
   .brand-chrome {
     width: 100%;
-    max-width: none;
-    left: 0;
+    max-width: 100%;
     margin: 0 0 12px;
+    border-radius: 12px;
   }
 
   .gov-topbar-inner {
-    padding: 8px max(14px, var(--safe-left)) 8px max(14px, var(--safe-right));
-    padding-top: max(8px, var(--safe-top));
+    padding: 10px 12px;
   }
 
   .inst-header {
-    padding: 12px max(14px, var(--safe-left)) 10px max(14px, var(--safe-right));
+    padding: 12px 12px 10px;
   }
 
   .gov-escudo {
-    height: 26px;
+    height: 28px;
   }
 
   .gov-wordmark {
-    height: 14px;
+    height: 15px;
   }
 
   .gov-topbar-label {
@@ -1214,16 +1277,22 @@ code {
   }
 
   .inst-logo {
-    height: 40px;
-    max-width: 120px;
+    height: 44px;
+    max-width: 140px;
   }
 
   .inst-title {
-    font-size: 1.15rem;
+    font-size: 1.18rem;
   }
 
   .inst-kicker {
     font-size: 11px;
+  }
+
+  /* Lista anclada al control; backdrop ayuda en táctil */
+  .app-select-option {
+    min-height: 48px;
+    padding: 14px 14px;
   }
 
   .inst-badges-mobile {
@@ -2225,20 +2294,19 @@ html.is-honor {
   --touch-min: 46px;
 }
 
-/* Honor: no tocar full-bleed del header (ya es 100% del body); densificar logos */
-html.is-honor .gov-topbar,
-html.is-honor .inst-header-band {
+/* Honor: header al mismo eje que medición; densificar solo un poco el título */
+html.is-honor .brand-chrome {
   width: 100%;
-  display: block;
+  max-width: 100%;
 }
 
 html.is-honor .inst-logo {
-  height: 48px;
-  max-width: 160px;
+  height: 42px;
+  max-width: 136px;
 }
 
 html.is-honor .inst-title {
-  font-size: 1.15rem;
+  font-size: 1.12rem;
 }
 
 html.is-honor .inst-kicker {
@@ -2303,12 +2371,17 @@ html.is-honor .chip {
   padding: 5px 9px;
 }
 
-html.is-honor .app-select {
+html.is-honor .app-select-trigger {
   min-height: 46px;
   padding: 10px 34px 10px 12px;
 }
 
 html.is-honor .app-select-text {
+  font-size: 15.5px;
+}
+
+html.is-honor .app-select-option {
+  min-height: 46px;
   font-size: 15.5px;
 }
 
