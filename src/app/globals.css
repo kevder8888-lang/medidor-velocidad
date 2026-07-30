@@ -2331,7 +2331,7 @@ html.is-honor body {
   text-size-adjust: 100% !important;
 }
 
-/* Controles fijos y paneles: mismo zoom de página (no reescalar aparte) */
+/* Controles fijos y paneles: mismo ancho que el menú inferior */
 html.is-honor .bottom-nav,
 html.is-honor .sticky-cta,
 html.is-honor .app,
@@ -2341,6 +2341,15 @@ html.is-honor .admin-panel,
 html.is-honor .leaflet-container {
   max-width: 100%;
   box-sizing: border-box;
+}
+
+/* Encabezado (franja roja + franja blanca institucional): ancho completo,
+   igual que el menú inferior. Algunas MagicOS lo dejaban más angosto. */
+html.is-honor .brand-chrome,
+html.is-honor .gov-topbar,
+html.is-honor .inst-header-band {
+  width: 100%;
+  max-width: none;
 }
 
 /* Mapa un poco más bajo en Honor para no empujar el bottom-nav */
