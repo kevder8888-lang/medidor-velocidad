@@ -261,27 +261,24 @@ h2.desktop-only {
   display: block;
 }
 
-/* ——— Brand chrome ———
- * Fuera de .app: mismo ancho de pantalla que .bottom-nav
- * (Medir | Mapa | Historial | Admin). left/right 0 implícito.
+/* ——— Brand chrome (base: web + Android genérico / Xiaomi) ———
+ * BrandHeader fuera de .app. Estilos Honor van solo en html.is-honor.
  */
 .brand-chrome {
   display: block;
   position: relative;
+  left: 0;
+  right: 0;
   width: 100%;
   max-width: none;
-  margin: 0 0 16px;
+  margin: 0 0 22px;
   padding: 0;
   box-sizing: border-box;
   background-color: #fff;
-  border: none;
   border-bottom: 1px solid var(--border);
-  border-radius: 0;
   box-shadow: var(--shadow-sm);
-  overflow: visible; /* no recortar el título */
 }
 
-/* Franja roja gob.pe = ancho del menú inferior */
 .gov-topbar {
   display: block;
   width: 100%;
@@ -293,10 +290,10 @@ h2.desktop-only {
 }
 
 .gov-topbar-inner {
-  width: 100%;
   max-width: 1120px;
+  width: 100%;
   margin: 0 auto;
-  padding: 10px max(14px, var(--safe-left)) 10px max(14px, var(--safe-right));
+  padding: 8px max(16px, var(--safe-left)) 8px max(16px, var(--safe-right));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -305,7 +302,6 @@ h2.desktop-only {
   box-sizing: border-box;
 }
 
-/* Banda blanca OSIPTEL */
 .inst-header-band {
   display: block;
   width: 100%;
@@ -351,10 +347,10 @@ h2.desktop-only {
 }
 
 .inst-header {
-  width: 100%;
   max-width: 1120px;
+  width: 100%;
   margin: 0 auto;
-  padding: 16px max(14px, var(--safe-left)) 14px max(14px, var(--safe-right));
+  padding: 18px max(16px, var(--safe-left)) 16px max(16px, var(--safe-right));
   box-sizing: border-box;
 }
 
@@ -381,8 +377,8 @@ h2.desktop-only {
 }
 
 .inst-title-block {
-  flex: 1 1 auto;
-  min-width: 0; /* permite achicar sin ellipsis forzado del flex */
+  flex: 1;
+  min-width: 200px;
 }
 
 .inst-kicker {
@@ -399,12 +395,7 @@ h2.desktop-only {
   font-weight: 750;
   letter-spacing: -0.02em;
   color: var(--text);
-  line-height: 1.25;
-  white-space: normal;
-  overflow: visible;
-  text-overflow: unset;
-  word-break: normal;
-  overflow-wrap: break-word;
+  line-height: 1.2;
 }
 
 .inst-subtitle {
@@ -1251,86 +1242,53 @@ code {
     display: none !important;
   }
 
-  /* Ancho de pantalla = bottom-nav (no card con padding de .app) */
+  /* Android genérico / Xiaomi: header como antes (sin layout Honor) */
   .brand-chrome {
     width: 100%;
     max-width: none;
+    left: 0;
     margin: 0 0 12px;
-    border-radius: 0;
-    overflow: visible;
   }
 
   .gov-topbar-inner {
-    padding: 10px max(12px, var(--safe-left)) 10px max(12px, var(--safe-right));
+    padding: 8px max(14px, var(--safe-left)) 8px max(14px, var(--safe-right));
+    padding-top: max(8px, var(--safe-top));
   }
 
   .inst-header {
-    padding: 12px max(12px, var(--safe-left)) 10px max(12px, var(--safe-right));
+    padding: 12px max(14px, var(--safe-left)) 10px max(14px, var(--safe-right));
   }
 
   .gov-escudo {
-    height: 28px;
+    height: 26px;
   }
 
   .gov-wordmark {
-    height: 15px;
+    height: 14px;
   }
 
   .gov-topbar-label {
     font-size: 11px;
   }
 
-  /* Fila: logo + título; el título puede bajar a 2 líneas sin cortarse */
   .inst-header-inner {
     gap: 12px;
     flex-wrap: nowrap;
-    align-items: center;
   }
 
   .inst-logo {
     height: 40px;
-    max-width: 110px;
-  }
-
-  .inst-title-block {
-    min-width: 0;
-    flex: 1 1 auto;
+    max-width: 120px;
   }
 
   .inst-title {
-    font-size: 1.2rem;
-    line-height: 1.25;
-    white-space: normal;
-    overflow: visible;
-    text-overflow: unset;
+    font-size: 1.15rem;
   }
 
   .inst-kicker {
     font-size: 11px;
   }
 
-  /* Pantallas muy estrechas: logo arriba, título a todo el ancho del menú */
-  @media (max-width: 380px) {
-    .inst-header-inner {
-      flex-wrap: wrap;
-      align-items: flex-start;
-    }
-
-    .inst-logo-link {
-      flex: 0 0 auto;
-    }
-
-    .inst-title-block {
-      flex: 1 1 100%;
-      min-width: 100%;
-    }
-
-    .inst-title {
-      font-size: 1.22rem;
-    }
-  }
-
-  /* Lista anclada al control; backdrop ayuda en táctil */
   .app-select-option {
     min-height: 48px;
     padding: 14px 14px;
@@ -2335,11 +2293,29 @@ html.is-honor {
   --touch-min: 46px;
 }
 
-/* Honor: NO encoger el header ni truncar el título (mismo ancho que bottom-nav) */
+/*
+ * Honor / MagicOS only: título legible sin cortar "Medidor de velocidad".
+ * Android genérico y Xiaomi NO usan estas reglas.
+ */
 html.is-honor .brand-chrome {
   width: 100%;
   max-width: none;
+  margin-bottom: 12px;
   overflow: visible;
+}
+
+html.is-honor .gov-topbar-inner {
+  padding: 10px max(12px, var(--safe-left)) 10px max(12px, var(--safe-right));
+}
+
+html.is-honor .inst-header {
+  padding: 12px max(12px, var(--safe-left)) 10px max(12px, var(--safe-right));
+}
+
+html.is-honor .inst-header-inner {
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-start;
 }
 
 html.is-honor .inst-logo {
@@ -2347,20 +2323,22 @@ html.is-honor .inst-logo {
   max-width: 110px;
 }
 
+html.is-honor .inst-title-block {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
 html.is-honor .inst-title {
   font-size: 1.2rem;
+  line-height: 1.25;
   white-space: normal;
   overflow: visible;
   text-overflow: unset;
+  overflow-wrap: break-word;
 }
 
 html.is-honor .inst-kicker {
   font-size: 11px;
-}
-
-html.is-honor .inst-title-block {
-  min-width: 0;
-  flex: 1 1 auto;
 }
 
 html.is-honor .app {

@@ -730,7 +730,6 @@ export function SpeedTestApp() {
         onGrant={handleGpsGrant}
         onDeny={handleGpsDeny}
       />
-      {/* Mismo ancho de viewport que el menú Medir | Mapa | Historial | Admin */}
       <BrandHeader accessKind={liveAccess} />
       <div
         className={`app ${running ? "is-running" : ""} ${
