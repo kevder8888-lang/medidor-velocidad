@@ -4,17 +4,21 @@ import { useEffect } from "react";
 
 /**
  * Marca el HTML con clases por fabricante/SO.
- * Honor/Huawei (MagicOS) suele renderizar un poco más grande; solo densificamos.
- * No modifica altura del viewport (evita romper scroll en Xiaomi/MIUI).
+ *
+ * - is-honor: SOLO Honor/Huawei/MagicOS — densificación y header especial.
+ * - is-xiaomi: Xiaomi/MIUI — NO recibe reglas de Honor (scroll y layout intactos).
+ * No modifica altura del viewport.
  */
 export function DeviceClass() {
   useEffect(() => {
     const ua = navigator.userAgent || "";
     const root = document.documentElement;
 
-    const isHonor =
-      /Honor|HONOR|Huawei|HUAWEI|HarmonyOS|MagicUI|MagicOS/i.test(ua);
     const isXiaomi = /XiaoMi|Xiaomi|Redmi|POCO|MIUI|HyperOS/i.test(ua);
+    // Honor no se marca si el UA es Xiaomi (por si acaso hay solapamiento raro)
+    const isHonor =
+      !isXiaomi &&
+      /Honor|HONOR|Huawei|HUAWEI|HarmonyOS|MagicUI|MagicOS/i.test(ua);
 
     root.classList.toggle("is-honor", isHonor);
     root.classList.toggle("is-xiaomi", isXiaomi);
