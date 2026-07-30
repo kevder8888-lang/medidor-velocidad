@@ -1630,13 +1630,13 @@ code {
     }
   }
 
-  /* Bottom navigation */
+  /* Bottom navigation — siempre visible en móvil (Medir/Mapa/Local/Admin) */
   .bottom-nav {
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 50;
+    z-index: 60;
     height: calc(var(--bottom-nav-h) + var(--safe-bottom));
     padding-bottom: var(--safe-bottom);
     background: #fff;
@@ -1646,6 +1646,17 @@ code {
     grid-template-columns: 1fr 1fr 1fr 1fr;
     padding-left: var(--safe-left);
     padding-right: var(--safe-right);
+    /* No ocultar con transform/zoom de paneles */
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  html.is-honor .bottom-nav {
+    z-index: 70;
+    /* Anclado al viewport; el zoom de html lo escala con el resto */
+    position: fixed !important;
+    display: grid !important;
   }
 
   .bottom-nav-item {

@@ -66,7 +66,7 @@ export default function RootLayout({
           id="honor-ui-scale"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var ua=navigator.userAgent||"";if(/XiaoMi|Xiaomi|Redmi|POCO|MIUI|HyperOS/i.test(ua))return;if(!/Honor|HONOR|Huawei|HUAWEI|HarmonyOS|MagicUI|MagicOS/i.test(ua))return;var r=document.documentElement;r.classList.add("is-honor");r.style.setProperty("--honor-ui-scale","0.75");r.style.zoom="0.75";}catch(e){}})();`,
+            __html: `(function(){try{var ua=navigator.userAgent||"";if(/XiaoMi|Xiaomi|Redmi|POCO|MIUI|HyperOS/i.test(ua))return;if(!/Honor|HONOR|Huawei|HUAWEI|HarmonyOS|MagicUI|MagicOS/i.test(ua))return;var s="0.75";try{var k=sessionStorage.getItem("osiptel-honor-ui-scale");if(k&&+k>=0.72&&+k<=0.95)s=k;}catch(e){}var r=document.documentElement;r.classList.add("is-honor");r.style.setProperty("--honor-ui-scale",s);r.style.zoom=s;}catch(e){}})();`,
           }}
         />
         <DeviceClass />

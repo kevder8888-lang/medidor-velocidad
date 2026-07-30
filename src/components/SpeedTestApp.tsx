@@ -64,6 +64,7 @@ import {
   type NetworkAccessKind,
 } from "@/lib/isp";
 import { isAndroid, releaseWakeLock, requestWakeLock } from "@/lib/mobile";
+import { reassertHonorScale } from "@/lib/honorScale";
 import { runPrecheck } from "@/lib/precheck";
 import { shortHash } from "@/lib/signature";
 import { formatMbps, formatMs } from "@/lib/stats";
@@ -148,6 +149,17 @@ export function SpeedTestApp() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>("medir");
+
+  const goTab = useCallback((next: TabId) => {
+    setTab(next);
+    // Honor: reafirmar zoom al cambiar Medir/Mapa/Historial/Admin
+    requestAnimationFrame(() => {
+      reassertHonorScale();
+      // Segunda pasada tras montar mapa/admin
+      window.setTimeout(() => reassertHonorScale(), 50);
+      window.setTimeout(() => reassertHonorScale(), 300);
+    });
+  }, []);
   const [android, setAndroid] = useState(false);
   const [planOpen, setPlanOpen] = useState(true);
   const [liveAccess, setLiveAccess] = useState<NetworkAccessKind>("unknown");
@@ -369,7 +381,7 @@ export function SpeedTestApp() {
     setRunning(true);
     setResult(null);
     setProbes([]);
-    setTab("medir");
+    goTab("medir");
     setRepProgress({ current: 0, total });
     setProgress({
       phase: "precheck",
@@ -755,28 +767,28 @@ export function SpeedTestApp() {
           <button
             type="button"
             className={`tab ${tab === "medir" ? "active" : ""}`}
-            onClick={() => setTab("medir")}
+            onClick={() => goTab("medir")}
           >
             Medición
           </button>
           <button
             type="button"
             className={`tab ${tab === "mapa" ? "active" : ""}`}
-            onClick={() => setTab("mapa")}
+            onClick={() => goTab("mapa")}
           >
             Mapa
           </button>
           <button
             type="button"
             className={`tab ${tab === "historial" ? "active" : ""}`}
-            onClick={() => setTab("historial")}
+            onClick={() => goTab("historial")}
           >
             Historial ({history.length})
           </button>
           <button
             type="button"
             className={`tab ${tab === "admin" ? "active" : ""}`}
-            onClick={() => setTab("admin")}
+            onClick={() => goTab("admin")}
           >
             Acceso admin
           </button>
@@ -858,7 +870,7 @@ export function SpeedTestApp() {
                         className="history-main"
                         onClick={() => {
                           setResult(h);
-                          setTab("medir");
+                          goTab("medir");
                           setInfo("Resultado cargado desde el historial.");
                           setError(null);
                         }}
@@ -1805,7 +1817,7 @@ export function SpeedTestApp() {
         <button
           type="button"
           className={`bottom-nav-item ${tab === "medir" ? "active" : ""}`}
-          onClick={() => setTab("medir")}
+          onClick={() => goTab("medir")}
         >
           <span className="bottom-nav-icon" aria-hidden>
             ◎
@@ -1815,7 +1827,7 @@ export function SpeedTestApp() {
         <button
           type="button"
           className={`bottom-nav-item ${tab === "mapa" ? "active" : ""}`}
-          onClick={() => setTab("mapa")}
+          onClick={() => goTab("mapa")}
         >
           <span className="bottom-nav-icon" aria-hidden>
             ⌖
@@ -1825,7 +1837,7 @@ export function SpeedTestApp() {
         <button
           type="button"
           className={`bottom-nav-item ${tab === "historial" ? "active" : ""}`}
-          onClick={() => setTab("historial")}
+          onClick={() => goTab("historial")}
         >
           <span className="bottom-nav-icon" aria-hidden>
             ≡
@@ -1838,7 +1850,7 @@ export function SpeedTestApp() {
         <button
           type="button"
           className={`bottom-nav-item ${tab === "admin" ? "active" : ""}`}
-          onClick={() => setTab("admin")}
+          onClick={() => goTab("admin")}
         >
           <span className="bottom-nav-icon" aria-hidden>
             ⚙
