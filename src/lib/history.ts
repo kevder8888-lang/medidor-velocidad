@@ -78,7 +78,16 @@ function emptyConfidence(): ConfidenceResult {
 }
 
 function emptyPlan(): UserPlan {
-  return { downMbps: 0, upMbps: null, operator: "", technology: "" };
+  return {
+    serviceMode: "fixed",
+    downMbps: 0,
+    upMbps: null,
+    operator: "",
+    technology: "",
+    radioTech: "4g",
+    mobileDownMbps: 15,
+    mobileUpMbps: 5,
+  };
 }
 
 function trimSamples(arr: unknown, max = MAX_SAMPLES): number[] {

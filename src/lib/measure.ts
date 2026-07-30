@@ -1,5 +1,5 @@
 import { computeConfidence } from "./confidence";
-import { computeCvm } from "./cvm";
+import { computeCvmFromPlan } from "./cvm";
 import {
   accessKindLabel,
   fetchIspMeta,
@@ -540,10 +540,9 @@ export async function runSpeedTest(
     server,
     notes
   );
-  const cvm =
-    plan.downMbps > 0
-      ? computeCvm(download, upload, plan.downMbps, plan.upMbps)
-      : null;
+  const refDown =
+    plan.serviceMode === "mobile" ? plan.mobileDownMbps : plan.downMbps;
+  const cvm = refDown > 0 ? computeCvmFromPlan(download, upload, plan) : null;
 
   const finishedAt = new Date().toISOString();
 

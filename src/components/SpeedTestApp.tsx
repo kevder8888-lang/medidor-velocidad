@@ -32,6 +32,14 @@ import {
   PROTOCOL_VERSION,
 } from "@/lib/servers";
 import {
+  getDefaultMobileSpeeds,
+  MOBILE_OPERATORS,
+  RADIO_TECHS,
+  radioTechLabel,
+  type RadioTech,
+} from "@/lib/mobilePlans";
+import { referenceDownMbps } from "@/lib/cvm";
+import {
   downloadResultReportHtml,
   exportResultJson,
   exportResultPdf,
@@ -75,17 +83,40 @@ const PHASE_LABEL: Record<TestPhase, string> = {
   error: "Error",
 };
 
+function defaultPlan(): UserPlan {
+  const mobile = getDefaultMobileSpeeds("Movistar", "4g");
+  return {
+    serviceMode: "fixed",
+    downMbps: 100,
+    upMbps: 50,
+    operator: "",
+    technology: "ftth",
+    radioTech: "4g",
+    mobileDownMbps: mobile.downMbps,
+    mobileUpMbps: mobile.upMbps,
+  };
+}
+
 function loadPlan(): UserPlan {
-  if (typeof window === "undefined") {
-    return { downMbps: 100, upMbps: 50, operator: "", technology: "ftth" };
-  }
+  const base = defaultPlan();
+  if (typeof window === "undefined") return base;
   try {
     const raw = localStorage.getItem(PLAN_KEY);
-    if (raw) return JSON.parse(raw) as UserPlan;
+    if (raw) {
+      const p = JSON.parse(raw) as Partial<UserPlan>;
+      return {
+        ...base,
+        ...p,
+        serviceMode: p.serviceMode === "mobile" ? "mobile" : "fixed",
+        radioTech: (p.radioTech as RadioTech) || "4g",
+        mobileDownMbps: p.mobileDownMbps ?? base.mobileDownMbps,
+        mobileUpMbps: p.mobileUpMbps ?? base.mobileUpMbps,
+      };
+    }
   } catch {
     /* ignore */
   }
-  return { downMbps: 100, upMbps: 50, operator: "", technology: "ftth" };
+  return base;
 }
 
 type TabId = "medir" | "mapa" | "historial" | "admin";
@@ -93,12 +124,7 @@ type TabId = "medir" | "mapa" | "historial" | "admin";
 const REPS_KEY = "osiptel_medidor_reps_v1";
 
 export function SpeedTestApp() {
-  const [plan, setPlan] = useState<UserPlan>({
-    downMbps: 100,
-    upMbps: 50,
-    operator: "",
-    technology: "ftth",
-  });
+  const [plan, setPlan] = useState<UserPlan>(defaultPlan);
   const [serverPref, setServerPref] = useState<string>("auto");
   const [servers, setServers] = useState<MeasurementServer[]>([]);
   const [probes, setProbes] = useState<ServerProbe[]>([]);
@@ -280,8 +306,13 @@ export function SpeedTestApp() {
 
   async function start() {
     if (running) return;
-    if (!plan.downMbps || plan.downMbps <= 0) {
-      setError("Indica la velocidad de bajada contratada (Mbps).");
+    const refDown = referenceDownMbps(plan);
+    if (!refDown || refDown <= 0) {
+      setError(
+        plan.serviceMode === "mobile"
+          ? "Indica la velocidad de referencia móvil (Mbps) para 3G/4G/5G."
+          : "Indica la velocidad de bajada contratada (Mbps)."
+      );
       return;
     }
     const total = Math.min(10, Math.max(1, reps));
@@ -1073,8 +1104,9 @@ export function SpeedTestApp() {
                   <span>
                     <strong>Plan y servidor</strong>
                     <span className="plan-toggle-sub">
-                      {plan.downMbps}/{plan.upMbps ?? "—"} Mbps
-                      {plan.operator ? ` · ${plan.operator}` : ""}
+                      {plan.serviceMode === "mobile"
+                        ? `${plan.operator || "Móvil"} · ${radioTechLabel(plan.radioTech)} · ${plan.mobileDownMbps} Mbps`
+                        : `${plan.downMbps}/${plan.upMbps ?? "—"} Mbps${plan.operator ? ` · ${plan.operator}` : ""}`}
                     </span>
                   </span>
                   <span className="plan-toggle-chevron" aria-hidden>
@@ -1086,83 +1118,253 @@ export function SpeedTestApp() {
                   className={`plan-form ${planOpen ? "is-open" : ""}`}
                   id="plan-form"
                 >
-                  <div className="field-row">
-                    <div className="field">
-                      <label htmlFor="down">Bajada contratada (Mbps)</label>
-                      <input
-                        id="down"
-                        type="number"
-                        inputMode="decimal"
-                        min={1}
-                        step={1}
-                        value={plan.downMbps || ""}
-                        disabled={running}
-                        autoComplete="off"
-                        onChange={(e) =>
-                          setPlan((p) => ({
-                            ...p,
-                            downMbps: Number(e.target.value) || 0,
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="field">
-                      <label htmlFor="up">Subida contratada (Mbps)</label>
-                      <input
-                        id="up"
-                        type="number"
-                        inputMode="decimal"
-                        min={0}
-                        step={1}
-                        value={plan.upMbps ?? ""}
-                        disabled={running}
-                        autoComplete="off"
-                        onChange={(e) =>
-                          setPlan((p) => ({
-                            ...p,
-                            upMbps:
-                              e.target.value === ""
-                                ? null
-                                : Number(e.target.value),
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
                   <div className="field">
-                    <label htmlFor="op">Operador (opcional)</label>
-                    <input
-                      id="op"
-                      type="text"
-                      placeholder="Ej. Movistar, Claro, Win, Bitel…"
-                      value={plan.operator}
-                      disabled={running}
-                      onChange={(e) =>
-                        setPlan((p) => ({ ...p, operator: e.target.value }))
-                      }
-                    />
-                  </div>
-                  <div className="field">
-                    <label htmlFor="tech">Tecnología</label>
+                    <label htmlFor="svc-mode">Tipo de servicio</label>
                     <select
-                      id="tech"
-                      value={plan.technology}
+                      id="svc-mode"
+                      value={plan.serviceMode}
                       disabled={running}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const mode = e.target.value as "fixed" | "mobile";
                         setPlan((p) => ({
                           ...p,
-                          technology: e.target
-                            .value as UserPlan["technology"],
-                        }))
-                      }
+                          serviceMode: mode,
+                          // al pasar a móvil, rellenar catálogo si no hay valores
+                          ...(mode === "mobile" && !p.mobileDownMbps
+                            ? getDefaultMobileSpeeds(
+                                p.operator || "Movistar",
+                                p.radioTech || "4g"
+                              )
+                            : {}),
+                        }));
+                      }}
                     >
-                      <option value="ftth">FTTH (fibra)</option>
-                      <option value="hfc">HFC (cable)</option>
-                      <option value="wireless_fixed">Inalámbrico fijo</option>
-                      <option value="other">Otra</option>
-                      <option value="">No especificada</option>
+                      <option value="fixed">Internet fija</option>
+                      <option value="mobile">Internet móvil (3G/4G/5G)</option>
                     </select>
                   </div>
+
+                  {plan.serviceMode === "mobile" ? (
+                    <>
+                      <div className="field">
+                        <label htmlFor="mop">Operador móvil</label>
+                        <select
+                          id="mop"
+                          value={
+                            MOBILE_OPERATORS.includes(
+                              plan.operator as (typeof MOBILE_OPERATORS)[number]
+                            )
+                              ? plan.operator
+                              : plan.operator
+                                ? "Otro"
+                                : "Movistar"
+                          }
+                          disabled={running}
+                          onChange={(e) => {
+                            const op = e.target.value;
+                            const radio = plan.radioTech || "4g";
+                            const speeds =
+                              op === "Otro"
+                                ? {
+                                    downMbps: plan.mobileDownMbps,
+                                    upMbps: plan.mobileUpMbps ?? 5,
+                                  }
+                                : getDefaultMobileSpeeds(op, radio);
+                            setPlan((p) => ({
+                              ...p,
+                              operator: op === "Otro" ? p.operator || "Otro" : op,
+                              mobileDownMbps: speeds.downMbps,
+                              mobileUpMbps: speeds.upMbps,
+                            }));
+                          }}
+                        >
+                          {MOBILE_OPERATORS.map((op) => (
+                            <option key={op} value={op}>
+                              {op}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {(plan.operator === "Otro" ||
+                        !MOBILE_OPERATORS.includes(
+                          plan.operator as (typeof MOBILE_OPERATORS)[number]
+                        )) && (
+                        <div className="field">
+                          <label htmlFor="mop-other">Nombre operador</label>
+                          <input
+                            id="mop-other"
+                            type="text"
+                            value={plan.operator === "Otro" ? "" : plan.operator}
+                            placeholder="Nombre del operador"
+                            disabled={running}
+                            onChange={(e) =>
+                              setPlan((p) => ({
+                                ...p,
+                                operator: e.target.value || "Otro",
+                              }))
+                            }
+                          />
+                        </div>
+                      )}
+                      <div className="field">
+                        <label htmlFor="radio">Tecnología de radio</label>
+                        <select
+                          id="radio"
+                          value={plan.radioTech}
+                          disabled={running}
+                          onChange={(e) => {
+                            const radio = e.target.value as RadioTech;
+                            const op = plan.operator || "Movistar";
+                            const speeds = getDefaultMobileSpeeds(op, radio);
+                            setPlan((p) => ({
+                              ...p,
+                              radioTech: radio,
+                              mobileDownMbps: speeds.downMbps,
+                              mobileUpMbps: speeds.upMbps,
+                            }));
+                          }}
+                        >
+                          {RADIO_TECHS.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <p className="field-hint">
+                        Cada operador define la velocidad de referencia por
+                        tecnología. Puedes editarla. CVM = {CVM_THRESHOLD_PCT}% de
+                        esa referencia (
+                        {Math.round(
+                          referenceDownMbps(plan) * (CVM_THRESHOLD_PCT / 100) * 10
+                        ) / 10}{" "}
+                        Mbps mín.).
+                      </p>
+                      <div className="field-row">
+                        <div className="field">
+                          <label htmlFor="mdown">
+                            Ref. bajada {radioTechLabel(plan.radioTech)} (Mbps)
+                          </label>
+                          <input
+                            id="mdown"
+                            type="number"
+                            inputMode="decimal"
+                            min={0.1}
+                            step={0.1}
+                            value={plan.mobileDownMbps || ""}
+                            disabled={running}
+                            onChange={(e) =>
+                              setPlan((p) => ({
+                                ...p,
+                                mobileDownMbps: Number(e.target.value) || 0,
+                              }))
+                            }
+                          />
+                        </div>
+                        <div className="field">
+                          <label htmlFor="mup">Ref. subida (Mbps)</label>
+                          <input
+                            id="mup"
+                            type="number"
+                            inputMode="decimal"
+                            min={0}
+                            step={0.1}
+                            value={plan.mobileUpMbps ?? ""}
+                            disabled={running}
+                            onChange={(e) =>
+                              setPlan((p) => ({
+                                ...p,
+                                mobileUpMbps:
+                                  e.target.value === ""
+                                    ? null
+                                    : Number(e.target.value),
+                              }))
+                            }
+                          />
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="field-row">
+                        <div className="field">
+                          <label htmlFor="down">Bajada contratada (Mbps)</label>
+                          <input
+                            id="down"
+                            type="number"
+                            inputMode="decimal"
+                            min={1}
+                            step={1}
+                            value={plan.downMbps || ""}
+                            disabled={running}
+                            autoComplete="off"
+                            onChange={(e) =>
+                              setPlan((p) => ({
+                                ...p,
+                                downMbps: Number(e.target.value) || 0,
+                              }))
+                            }
+                          />
+                        </div>
+                        <div className="field">
+                          <label htmlFor="up">Subida contratada (Mbps)</label>
+                          <input
+                            id="up"
+                            type="number"
+                            inputMode="decimal"
+                            min={0}
+                            step={1}
+                            value={plan.upMbps ?? ""}
+                            disabled={running}
+                            autoComplete="off"
+                            onChange={(e) =>
+                              setPlan((p) => ({
+                                ...p,
+                                upMbps:
+                                  e.target.value === ""
+                                    ? null
+                                    : Number(e.target.value),
+                              }))
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div className="field">
+                        <label htmlFor="op">Operador (opcional)</label>
+                        <input
+                          id="op"
+                          type="text"
+                          placeholder="Ej. Movistar, Claro, Win…"
+                          value={plan.operator}
+                          disabled={running}
+                          onChange={(e) =>
+                            setPlan((p) => ({ ...p, operator: e.target.value }))
+                          }
+                        />
+                      </div>
+                      <div className="field">
+                        <label htmlFor="tech">Tecnología fija</label>
+                        <select
+                          id="tech"
+                          value={plan.technology}
+                          disabled={running}
+                          onChange={(e) =>
+                            setPlan((p) => ({
+                              ...p,
+                              technology: e.target
+                                .value as UserPlan["technology"],
+                            }))
+                          }
+                        >
+                          <option value="ftth">FTTH (fibra)</option>
+                          <option value="hfc">HFC (cable)</option>
+                          <option value="wireless_fixed">Inalámbrico fijo</option>
+                          <option value="other">Otra</option>
+                          <option value="">No especificada</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
                   <div className="field">
                     <label htmlFor="srv">Servidor de medición</label>
                     <select

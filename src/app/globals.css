@@ -1899,6 +1899,23 @@ code {
   background: rgba(0, 86, 172, 0.1) !important;
 }
 
+.admin-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px 12px;
+  margin-top: 14px;
+}
+
+.admin-multi-map {
+  width: 100%;
+  height: min(50dvh, 420px);
+  min-height: 260px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  z-index: 0;
+  background: #e8eef5;
+}
+
 /* ISP card */
 .isp-card {
   margin-bottom: 16px;

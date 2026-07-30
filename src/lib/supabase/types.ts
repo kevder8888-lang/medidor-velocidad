@@ -16,6 +16,9 @@ export interface MeasurementRow {
   plan_down_mbps: number | null;
   plan_up_mbps: number | null;
   technology: string | null;
+  /** fixed | mobile — may live only in payload if column missing */
+  service_mode?: string | null;
+  radio_tech?: string | null;
   access_type: string | null;
   access_label: string | null;
   isp_brand: string | null;

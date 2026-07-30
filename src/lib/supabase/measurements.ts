@@ -48,9 +48,19 @@ export function toMeasurementInsert(result: SpeedTestResult): MeasurementInsert 
       ni?.isp.displayName ||
       result.plan?.operator ||
       null,
-    plan_down_mbps: result.plan?.downMbps ?? null,
-    plan_up_mbps: result.plan?.upMbps ?? null,
-    technology: result.plan?.technology || null,
+    plan_down_mbps:
+      result.plan?.serviceMode === "mobile"
+        ? result.plan?.mobileDownMbps ?? result.plan?.downMbps ?? null
+        : result.plan?.downMbps ?? null,
+    plan_up_mbps:
+      result.plan?.serviceMode === "mobile"
+        ? result.plan?.mobileUpMbps ?? result.plan?.upMbps ?? null
+        : result.plan?.upMbps ?? null,
+    // technology: en móvil guardamos 3g/4g/5g; en fijo ftth/hfc/...
+    technology:
+      result.plan?.serviceMode === "mobile"
+        ? result.plan?.radioTech || null
+        : result.plan?.technology || null,
     access_type: ni?.access || result.precheck?.connectionType || null,
     access_label: ni?.accessLabel || null,
     isp_brand: ni?.isp.brand || null,

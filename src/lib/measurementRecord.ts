@@ -93,11 +93,30 @@ export function withResolvedPlan(
         result.plan?.operator ||
         "";
   return {
-    ...plan,
+    ...emptyishPlan(),
     ...result.plan,
+    ...plan,
+    serviceMode: plan.serviceMode || result.plan?.serviceMode || "fixed",
     downMbps: plan.downMbps || result.plan?.downMbps || 0,
     upMbps: plan.upMbps ?? result.plan?.upMbps ?? null,
     operator: op,
     technology: plan.technology || result.plan?.technology || "",
+    radioTech: plan.radioTech || result.plan?.radioTech || "4g",
+    mobileDownMbps:
+      plan.mobileDownMbps || result.plan?.mobileDownMbps || plan.downMbps || 0,
+    mobileUpMbps: plan.mobileUpMbps ?? result.plan?.mobileUpMbps ?? null,
+  };
+}
+
+function emptyishPlan(): UserPlan {
+  return {
+    serviceMode: "fixed",
+    downMbps: 0,
+    upMbps: null,
+    operator: "",
+    technology: "",
+    radioTech: "4g",
+    mobileDownMbps: 15,
+    mobileUpMbps: 5,
   };
 }

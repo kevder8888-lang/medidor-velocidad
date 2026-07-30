@@ -72,6 +72,10 @@ function buildReportHtml(
     upMbps: null,
     operator: "",
     technology: "",
+    serviceMode: "fixed",
+    radioTech: "4g",
+    mobileDownMbps: 15,
+    mobileUpMbps: 5,
   };
   const notesArr = Array.isArray(result.notes) ? result.notes : [];
   const factorsArr = Array.isArray(conf.factors) ? conf.factors : [];
@@ -194,9 +198,19 @@ function buildReportHtml(
   <h2>Plan y CVM</h2>
   <table>
     <tr><th>Operador</th><td>${escapeHtml(plan.operator || "—")}</td></tr>
-    <tr><th>Tecnología</th><td>${escapeHtml(String(plan.technology || "—"))}</td></tr>
-    <tr><th>Plan contratado</th><td>${plan.downMbps ?? "—"} / ${plan.upMbps ?? "—"} Mbps</td></tr>
+    <tr><th>Modo</th><td>${escapeHtml(plan.serviceMode === "mobile" ? "Móvil" : "Fijo")}</td></tr>
+    <tr><th>Tecnología</th><td>${escapeHtml(
+      plan.serviceMode === "mobile"
+        ? String(plan.radioTech || "—")
+        : String(plan.technology || "—")
+    )}</td></tr>
+    <tr><th>Velocidad de referencia</th><td>${
+      plan.serviceMode === "mobile"
+        ? `${plan.mobileDownMbps ?? "—"} / ${plan.mobileUpMbps ?? "—"} Mbps`
+        : `${plan.downMbps ?? "—"} / ${plan.upMbps ?? "—"} Mbps`
+    }</td></tr>
     <tr><th>Mínimo garantizado (70%)</th><td>${result.cvm ? formatMbps(result.cvm.minGuaranteedDownMbps) + " Mbps" : "—"}</td></tr>
+    <tr><th>Base CVM</th><td>${escapeHtml(result.cvm?.basisNote || "—")}</td></tr>
     <tr><th>CVM %</th><td>${result.cvm ? result.cvm.cvmPct + "%" : "—"}</td></tr>
     <tr><th>Asimetría medida up/down</th><td>${result.cvm ? result.cvm.asymmetryMeasuredRatio : "—"}</td></tr>
     <tr><th>Bufferbloat (Δ)</th><td>${result.bufferbloatMs != null ? "+" + formatMs(result.bufferbloatMs) + " ms" : "—"}</td></tr>

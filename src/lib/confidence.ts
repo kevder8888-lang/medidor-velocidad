@@ -138,12 +138,9 @@ export function computeConfidence(
   const level: ConfidenceResult["level"] =
     score >= 75 ? "alta" : score >= 50 ? "media" : "baja";
 
-  // CVM regulatorio de este MVP es para internet fija, no datos móviles
+  // Válido para CVM de este MVP: fija o móvil (con plan de referencia), sin loopback
   const validForRegulatoryCvm =
-    !server.isLoopback &&
-    score >= 50 &&
-    precheck.online &&
-    precheck.connectionType !== "cellular";
+    !server.isLoopback && score >= 50 && precheck.online;
 
   if (!validForRegulatoryCvm) {
     notes.push(

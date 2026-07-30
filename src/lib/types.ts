@@ -13,6 +13,17 @@ export type AccessType = "ethernet" | "wifi" | "cellular" | "unknown";
 
 export type ServerKind = "internet" | "self_hosted" | "custom";
 
+export type ServiceMode = "fixed" | "mobile";
+
+export type RadioTech = "3g" | "4g" | "5g";
+
+export type FixedTechnology =
+  | "ftth"
+  | "hfc"
+  | "wireless_fixed"
+  | "other"
+  | "";
+
 export interface PreCheckResult {
   online: boolean;
   connectionType: AccessType;
@@ -55,7 +66,6 @@ export interface ThroughputResult {
   durationMs: number;
   streams: number;
   server: string;
-  /** Mbps samples per ~1s window after ramp-up discard */
   windowsMbps: number[];
 }
 
@@ -78,6 +88,12 @@ export interface CvmResult {
   asymmetryMeasuredRatio: number;
   meetsAsymmetryContract: boolean | null;
   thresholdPct: number;
+  /** fixed | mobile */
+  serviceMode: ServiceMode;
+  /** 3g | 4g | 5g when mobile */
+  radioTech: RadioTech | null;
+  /** Human note for reports */
+  basisNote: string;
 }
 
 export interface ServerProbe {
@@ -103,7 +119,6 @@ export interface ServerMetaInfo {
   raw?: Record<string, unknown>;
 }
 
-/** ISP / operator identity derived from public IP + network type */
 export interface NetworkIdentity {
   access: "ethernet" | "wifi" | "cellular" | "unknown";
   accessLabel: string;
@@ -121,11 +136,8 @@ export interface NetworkIdentity {
     confidence: "alta" | "media" | "baja";
     notes: string[];
   };
-  /** True when we believe this is mobile data path */
   likelyMobileData: boolean;
-  /** True when Wi‑Fi (home ISP ≠ SIM) */
   likelyWifi: boolean;
-  /** Can we read SIM MCC/MNC? Always false on web */
   simReadable: false;
   disclaimer: string;
 }
@@ -137,7 +149,6 @@ export interface ResultSignature {
   payloadVersion: string;
 }
 
-/** Device GPS / network location captured on the handset */
 export interface ResultGeo {
   latitude: number;
   longitude: number;
@@ -145,6 +156,29 @@ export interface ResultGeo {
   altitudeM: number | null;
   timestamp: string;
   source: string;
+}
+
+/**
+ * Plan del usuario.
+ * - fixed: velocidad contratada del plan fijo
+ * - mobile: velocidad de referencia del operador según 3G/4G/5G (editable)
+ */
+export interface UserPlan {
+  serviceMode: ServiceMode;
+  /** Operador (red o declarado) */
+  operator: string;
+  /** Fijo: Mbps contratados */
+  downMbps: number;
+  upMbps: number | null;
+  /** Fijo: tecnología de acceso */
+  technology: FixedTechnology;
+  /** Móvil: tecnología de radio del plan/red al medir */
+  radioTech: RadioTech;
+  /** Móvil: velocidad de bajada de referencia (operador × tech) */
+  mobileDownMbps: number;
+  /** Móvil: subida de referencia */
+  mobileUpMbps: number | null;
+  planLabel?: string;
 }
 
 export interface SpeedTestResult {
@@ -164,11 +198,8 @@ export interface SpeedTestResult {
   serverProbes: ServerProbe[];
   serverMeta: ServerMetaInfo | null;
   networkIdentity: NetworkIdentity | null;
-  /** GPS del dispositivo al medir (Android/browser geolocation) */
   geo: ResultGeo | null;
-  /** 1-based index within a multi-run batch */
   runIndex?: number;
-  /** Total runs requested in the batch */
   runTotal?: number;
   plan: UserPlan;
   latency: LatencyResult;
@@ -184,18 +215,10 @@ export interface SpeedTestResult {
 
 export interface ProgressEvent {
   phase: TestPhase;
-  progress: number; // 0-100 overall
+  progress: number;
   liveMbps?: number;
   liveLatencyMs?: number;
   message: string;
-}
-
-export interface UserPlan {
-  downMbps: number;
-  upMbps: number | null;
-  operator: string;
-  technology: "ftth" | "hfc" | "wireless_fixed" | "other" | "";
-  planLabel?: string;
 }
 
 export interface MeasurementServer {
@@ -203,12 +226,10 @@ export interface MeasurementServer {
   name: string;
   region: string;
   kind: ServerKind;
-  /** Absolute or same-origin relative base not needed if URLs fully provided */
   downloadUrl: (bytes: number) => string;
   uploadUrl: string;
   pingUrl: string;
   metaUrl?: string;
-  /** True when measuring only loopback/LAN of the client machine */
   isLoopback: boolean;
   warning?: string;
 }
@@ -225,7 +246,17 @@ export interface AggregateStats {
   avgConfidence: number | null;
   medianDownMbps: number | null;
   lastTestAt: string | null;
-  byOperator: { operator: string; count: number; passRate: number | null; avgDown: number }[];
-  byDay: { day: string; count: number; avgDown: number; cvmPassRate: number | null }[];
+  byOperator: {
+    operator: string;
+    count: number;
+    passRate: number | null;
+    avgDown: number;
+  }[];
+  byDay: {
+    day: string;
+    count: number;
+    avgDown: number;
+    cvmPassRate: number | null;
+  }[];
   recentTrend: "up" | "down" | "stable" | "n/a";
 }
