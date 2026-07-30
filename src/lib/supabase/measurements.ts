@@ -105,17 +105,22 @@ export async function saveMeasurementToCloud(
 
   try {
     const row = toMeasurementInsert(result);
+    // IMPORTANTE: no usar .select() tras insert con rol anon.
+    // RLS solo permite INSERT a anon; SELECT es solo authenticated.
+    // .insert().select() fallaba aunque el insert fuera válido.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (sb.from("measurements") as any)
-      .insert(row)
-      .select("id")
-      .single();
+    const { error } = await (sb.from("measurements") as any).insert(row);
 
     if (error) {
-      return { ok: false, error: String(error.message || error) };
+      console.error("[supabase] insert measurements failed:", error);
+      return {
+        ok: false,
+        error: String(error.message || error.code || error),
+      };
     }
-    return { ok: true, id: String(data?.id ?? "") };
+    return { ok: true, id: result.id };
   } catch (e) {
+    console.error("[supabase] insert exception:", e);
     return {
       ok: false,
       error: e instanceof Error ? e.message : "Error al guardar en la nube",

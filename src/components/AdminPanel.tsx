@@ -68,10 +68,10 @@ export function AdminPanel() {
       setRows([]);
     } else {
       setRows(res.rows);
-      if (res.rows[0] && !selectedId) setSelectedId(res.rows[0].id);
+      setSelectedId((prev) => prev ?? res.rows[0]?.id ?? null);
     }
     setLoading(false);
-  }, [selectedId]);
+  }, []);
 
   useEffect(() => {
     if (session) void load();
@@ -313,10 +313,32 @@ export function AdminPanel() {
       <section className="card" style={{ marginTop: 12 }}>
         <h2>Todas las mediciones</h2>
         {filtered.length === 0 ? (
-          <p className="muted-p">
-            No hay mediciones en la nube todavía. Mide desde cualquier
-            dispositivo con Supabase configurado.
-          </p>
+          <div className="muted-p">
+            <p>
+              No hay mediciones en la nube todavía.
+            </p>
+            <ol style={{ margin: "10px 0 0 18px", lineHeight: 1.5 }}>
+              <li>
+                En el otro dispositivo abre la misma URL de Vercel (no localhost).
+              </li>
+              <li>
+                Haz una medición nueva y revisa el mensaje: debe decir{" "}
+                <strong>nube OK</strong> (no “nube ERROR”).
+              </li>
+              <li>
+                En Supabase → <strong>Table Editor → measurements</strong> debe
+                aparecer una fila.
+              </li>
+              <li>
+                Aquí pulsa <strong>Actualizar</strong>.
+              </li>
+            </ol>
+            <p className="field-hint" style={{ marginTop: 10 }}>
+              Si Table Editor está vacío, el otro dispositivo no está subiendo
+              (variables de entorno o error de insert). Si Table Editor tiene filas
+              y aquí no, es un problema de login/RLS.
+            </p>
+          </div>
         ) : (
           <div className="admin-table-wrap">
             <table className="admin-table">

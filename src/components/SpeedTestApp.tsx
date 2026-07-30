@@ -312,6 +312,9 @@ export function SpeedTestApp() {
     let saveOk = true;
     let hist = loadHistory();
     let geoFailNote: string | null = null;
+    let cloudUploaded = 0;
+    let cloudFailed = 0;
+    let lastCloudError = "";
 
     try {
       for (let i = 0; i < total; i++) {
@@ -408,20 +411,17 @@ export function SpeedTestApp() {
         if (!saved.ok) saveOk = false;
 
         // Nube (Supabase): todos los dispositivos → panel admin
-        let cloudOk = !isSupabaseConfigured(); // si no hay nube, no reportar error
-        let cloudErr = "";
         if (isSupabaseConfigured()) {
           const cloud = await saveMeasurementToCloud(enriched);
-          cloudOk = cloud.ok || Boolean(cloud.skipped);
-          if (!cloud.ok && !cloud.skipped) cloudErr = cloud.error;
+          if (cloud.ok) {
+            cloudUploaded += 1;
+          } else if (!cloud.skipped) {
+            cloudFailed += 1;
+            lastCloudError = cloud.error;
+          }
         }
 
         last = enriched;
-
-        // mensaje parcial si falla la última subida (se sobrescribe al final de la serie)
-        if (!cloudOk && cloudErr) {
-          setInfo(`Nube: no se pudo subir (${cloudErr}).`);
-        }
       }
 
       if (last) {
@@ -436,12 +436,20 @@ export function SpeedTestApp() {
         });
         const localMsg = saveOk
           ? total > 1
-            ? `${total} mediciones en historial local`
-            : "Guardada en historial local"
-          : "Problema al guardar historial local";
-        const cloudMsg = isSupabaseConfigured()
-          ? " · enviada a la nube (admin)"
-          : "";
+            ? `${total} en historial local`
+            : "Historial local OK"
+          : "Fallo historial local";
+        let cloudMsg = "";
+        if (!isSupabaseConfigured()) {
+          cloudMsg = " · nube no configurada";
+        } else if (cloudUploaded > 0 && cloudFailed === 0) {
+          cloudMsg =
+            cloudUploaded > 1
+              ? ` · nube OK (${cloudUploaded} subidas)`
+              : " · nube OK (admin puede verla)";
+        } else if (cloudFailed > 0) {
+          cloudMsg = ` · nube ERROR: ${lastCloudError}`;
+        }
         setInfo(`${localMsg}${cloudMsg}.`);
       }
 

@@ -91,6 +91,9 @@ create policy "admin_select_measurements"
   to authenticated
   using (true);
 
+-- Nota: los INSERT de la app pública NO deben hacer RETURNING/select.
+-- anon puede insertar; solo authenticated puede leer.
+
 -- Solo admin autenticado puede borrar (opcional)
 drop policy if exists "admin_delete_measurements" on public.measurements;
 create policy "admin_delete_measurements"
