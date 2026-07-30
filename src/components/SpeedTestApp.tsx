@@ -10,8 +10,14 @@ import { Sparkline } from "@/components/Sparkline";
 import { SplashScreen } from "@/components/SplashScreen";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { saveMeasurementToCloud } from "@/lib/supabase/measurements";
-import type { DeviceGeo } from "@/lib/geo";
-import { formatCoords, getDevicePosition } from "@/lib/geo";
+import type { DeviceGeo, GpsConsent } from "@/lib/geo";
+import {
+  formatCoords,
+  getDevicePosition,
+  loadGpsConsent,
+  saveGpsConsent,
+} from "@/lib/geo";
+import { buildSeriesOfficialResult } from "@/lib/seriesAggregate";
 import {
   deviceGeoToResultGeo,
   summarizeMeasurement,
@@ -152,12 +158,14 @@ export function SpeedTestApp() {
   const [repProgress, setRepProgress] = useState({ current: 0, total: 0 });
   const [deviceGeo, setDeviceGeo] = useState<DeviceGeo | null>(null);
   const [splashDone, setSplashDone] = useState(false);
+  const [gpsConsent, setGpsConsent] = useState<GpsConsent>(null);
 
   useEffect(() => {
     setPlan(loadPlan());
     setHistory(loadHistory());
     setServers(getMeasurementServers());
     setAndroid(isAndroid());
+    setGpsConsent(loadGpsConsent());
     try {
       const pref = localStorage.getItem(SERVER_KEY);
       if (pref) setServerPref(pref);
@@ -315,6 +323,24 @@ export function SpeedTestApp() {
       );
       return;
     }
+
+    // Consentimiento GPS obligatorio antes de medir
+    const consent = gpsConsent ?? loadGpsConsent();
+    if (consent === null) {
+      setError(
+        "Primero elige si autorizas la ubicación GPS (cuadro debajo del medidor)."
+      );
+      try {
+        document.getElementById("gps-consent")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+
     const total = Math.min(10, Math.max(1, reps));
     setError(null);
     setInfo(null);
@@ -346,36 +372,46 @@ export function SpeedTestApp() {
     let cloudUploaded = 0;
     let cloudFailed = 0;
     let lastCloudError = "";
+    const seriesRuns: SpeedTestResult[] = [];
+    const seriesId =
+      total > 1
+        ? typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `s_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+        : undefined;
 
     try {
       for (let i = 0; i < total; i++) {
         setRepProgress({ current: i + 1, total });
 
-        // Ubicación actual del dispositivo en CADA medición (hora GPS fresca)
+        // GPS solo si el usuario consintió
         let geoCapture: DeviceGeo | null = null;
-        try {
-          onProgress({
-            phase: "precheck",
-            progress: (i / total) * 100 + 1,
-            message:
-              total > 1
-                ? `Repetición ${i + 1}/${total} · Obteniendo ubicación GPS…`
-                : "Obteniendo ubicación GPS del dispositivo…",
-          });
-          geoCapture = await getDevicePosition({
-            highAccuracy: true,
-            timeoutMs: 15_000,
-            maximumAgeMs: 0, // forzar lectura actual, no caché vieja
-          });
-          setDeviceGeo(geoCapture);
-          geoFailNote = null;
-        } catch (geoErr) {
-          geoFailNote =
-            geoErr instanceof Error
-              ? geoErr.message
-              : "Sin GPS del dispositivo";
-          // reutilizar última conocida solo si existe
-          geoCapture = deviceGeo;
+        if (consent === "granted") {
+          try {
+            onProgress({
+              phase: "precheck",
+              progress: (i / total) * 100 + 1,
+              message:
+                total > 1
+                  ? `Repetición ${i + 1}/${total} · Obteniendo ubicación GPS…`
+                  : "Obteniendo ubicación GPS del dispositivo…",
+            });
+            geoCapture = await getDevicePosition({
+              highAccuracy: true,
+              timeoutMs: 15_000,
+              maximumAgeMs: 0,
+            });
+            setDeviceGeo(geoCapture);
+            geoFailNote = null;
+          } catch (geoErr) {
+            geoFailNote =
+              geoErr instanceof Error
+                ? geoErr.message
+                : "Sin GPS del dispositivo";
+            geoCapture = deviceGeo;
+          }
+        } else {
+          geoFailNote = "Ubicación no autorizada por el usuario.";
         }
 
         const res = await runSpeedTest(
@@ -399,7 +435,6 @@ export function SpeedTestApp() {
         const geo = geoCapture
           ? {
               ...deviceGeoToResultGeo(geoCapture),
-              // alinear sello de tiempo con el fin de la medición
               timestamp: measuredAt,
             }
           : null;
@@ -413,18 +448,21 @@ export function SpeedTestApp() {
           geo,
           runIndex: i + 1,
           runTotal: total,
+          seriesId,
+          isSeriesAggregate: false,
           notes: [
             ...res.notes,
-            total > 1 ? `Serie: repetición ${i + 1} de ${total}.` : null,
-            geo
-              ? `Ubicación guardada: ${formatCoords(geo.latitude, geo.longitude)} (${geo.accuracyM != null ? `±${Math.round(geo.accuracyM)} m` : "precisión N/D"}) · ${new Date(measuredAt).toLocaleString("es-PE")}.`
-              : `Sin ubicación GPS: ${geoFailNote || "permiso denegado o no disponible"}.`,
+            total > 1 ? `Serie ${seriesId?.slice(0, 8)}: repetición ${i + 1} de ${total}.` : null,
+            consent === "granted"
+              ? geo
+                ? `Ubicación: ${formatCoords(geo.latitude, geo.longitude)} (±${Math.round(geo.accuracyM ?? 0)} m).`
+                : `GPS autorizado pero no obtenido: ${geoFailNote || "—"}.`
+              : "GPS no autorizado (medición sin coordenadas).",
             `Operador: ${resolvedPlan.operator || "—"}.`,
-            `↓ ${res.download.medianMbps} Mbps · ↑ ${res.upload.medianMbps} Mbps · lat ${res.latency.medianMs} ms.`,
+            `↓ ${res.download.medianMbps} · ↑ ${res.upload.medianMbps} · lat ${res.latency.medianMs} ms.`,
           ].filter(Boolean) as string[],
         };
 
-        // Sincronizar operador del formulario con la red detectada en esta medición
         if (resolvedPlan.operator) {
           setPlan((p) =>
             p.operator === resolvedPlan.operator
@@ -436,17 +474,17 @@ export function SpeedTestApp() {
         setResult(enriched);
         setProbes(enriched.serverProbes ?? []);
         applyNetworkFromResult(enriched);
+        seriesRuns.push(enriched);
+
         const saved = saveResult(enriched);
         hist = saved.history;
         setHistory(hist);
         if (!saved.ok) saveOk = false;
 
-        // Nube (Supabase): todos los dispositivos → panel admin
         if (isSupabaseConfigured()) {
           const cloud = await saveMeasurementToCloud(enriched);
-          if (cloud.ok) {
-            cloudUploaded += 1;
-          } else if (!cloud.skipped) {
+          if (cloud.ok) cloudUploaded += 1;
+          else if (!cloud.skipped) {
             cloudFailed += 1;
             lastCloudError = cloud.error;
           }
@@ -455,29 +493,53 @@ export function SpeedTestApp() {
         last = enriched;
       }
 
+      // Resultado oficial de la serie = mediana de las N corridas
+      if (total > 1 && seriesRuns.length >= 2) {
+        onProgress({
+          phase: "done",
+          progress: 99,
+          message: "Calculando mediana oficial de la serie…",
+        });
+        const official = await buildSeriesOfficialResult(seriesRuns);
+        if (official) {
+          official.seriesId = seriesId;
+          const savedAgg = saveResult(official);
+          hist = savedAgg.history;
+          setHistory(hist);
+          if (!savedAgg.ok) saveOk = false;
+          if (isSupabaseConfigured()) {
+            const cloud = await saveMeasurementToCloud(official);
+            if (cloud.ok) cloudUploaded += 1;
+            else if (!cloud.skipped) {
+              cloudFailed += 1;
+              lastCloudError = cloud.error;
+            }
+          }
+          setResult(official);
+          last = official;
+        }
+      }
+
       if (last) {
         setProgress({
           phase: "done",
           progress: 100,
           message:
             total > 1
-              ? `Serie completada (${total} mediciones)`
+              ? `Serie completada · mediana de ${total} mediciones`
               : "Prueba completada",
           liveMbps: last.download.medianMbps,
         });
         const localMsg = saveOk
           ? total > 1
-            ? `${total} en historial local`
+            ? `${total} corridas + 1 mediana en historial`
             : "Historial local OK"
           : "Fallo historial local";
         let cloudMsg = "";
         if (!isSupabaseConfigured()) {
           cloudMsg = " · nube no configurada";
         } else if (cloudUploaded > 0 && cloudFailed === 0) {
-          cloudMsg =
-            cloudUploaded > 1
-              ? ` · nube OK (${cloudUploaded} subidas)`
-              : " · nube OK (admin puede verla)";
+          cloudMsg = ` · nube OK (${cloudUploaded})`;
         } else if (cloudFailed > 0) {
           cloudMsg = ` · nube ERROR: ${lastCloudError}`;
         }
@@ -863,7 +925,7 @@ export function SpeedTestApp() {
             >
               <div className="measure-card-head">
                 <h2>Medición</h2>
-                <label className="reps-control" title="Repeticiones (1–10)">
+                <label className="reps-control" title="Repeticiones (1–10). Si &gt;1 se guarda cada corrida y la mediana oficial.">
                   <span className="reps-label">×</span>
                   <input
                     type="text"
@@ -978,9 +1040,79 @@ export function SpeedTestApp() {
               </div>
               <div className="status-line">{progress.message}</div>
 
+              {/* Consentimiento GPS explícito */}
+              <div
+                id="gps-consent"
+                className={`gps-consent ${
+                  gpsConsent === null
+                    ? "gps-consent-pending"
+                    : gpsConsent === "granted"
+                      ? "gps-consent-ok"
+                      : "gps-consent-no"
+                }`}
+              >
+                <div className="gps-consent-title">Ubicación GPS</div>
+                <p className="gps-consent-text">
+                  ¿Autorizas capturar la <strong>ubicación del dispositivo</strong>{" "}
+                  (lat/long) junto a cada medición? Se usa solo para el registro y el
+                  mapa. Puedes cambiar la decisión cuando quieras.
+                </p>
+                <div className="gps-consent-actions">
+                  <button
+                    type="button"
+                    className={`btn btn-touch ${
+                      gpsConsent === "granted" ? "btn-secondary" : "btn-ghost"
+                    }`}
+                    disabled={running}
+                    onClick={() => {
+                      saveGpsConsent("granted");
+                      setGpsConsent("granted");
+                      setError(null);
+                    }}
+                  >
+                    Autorizar GPS
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn btn-touch ${
+                      gpsConsent === "denied" ? "btn-secondary" : "btn-ghost"
+                    }`}
+                    disabled={running}
+                    onClick={() => {
+                      saveGpsConsent("denied");
+                      setGpsConsent("denied");
+                      setError(null);
+                    }}
+                  >
+                    Continuar sin GPS
+                  </button>
+                </div>
+                {gpsConsent === "granted" && (
+                  <p className="field-hint" style={{ marginTop: 6 }}>
+                    GPS autorizado. El navegador puede pedir permiso del sistema.
+                  </p>
+                )}
+                {gpsConsent === "denied" && (
+                  <p className="field-hint" style={{ marginTop: 6 }}>
+                    Sin coordenadas en esta sesión (puedes autorizar más tarde).
+                  </p>
+                )}
+                {gpsConsent === null && (
+                  <p className="field-hint warn" style={{ marginTop: 6 }}>
+                    Elige una opción antes de iniciar la medición.
+                  </p>
+                )}
+              </div>
+
               <div id="results-anchor" />
               {error && <div className="error-box">{error}</div>}
               {info && <div className="info-box">{info}</div>}
+              {result?.isSeriesAggregate && (
+                <div className="info-box">
+                  Resultado <strong>oficial de serie</strong> (mediana de{" "}
+                  {result.runTotal} mediciones).
+                </div>
+              )}
 
               {result && (
                 <div className="record-snapshot">

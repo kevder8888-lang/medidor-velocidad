@@ -9,10 +9,11 @@ import {
 } from "@/lib/geo";
 import { formatMbps, formatMs } from "@/lib/stats";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
+import { fetchAllMeasurements } from "@/lib/supabase/measurements";
 import {
-  fetchAllMeasurements,
-  measurementsToCsv,
-} from "@/lib/supabase/measurements";
+  measurementsToEnrichedCsv,
+  measurementsToEnrichedJson,
+} from "@/lib/exportReport";
 import type { MeasurementRow } from "@/lib/supabase/types";
 import type { Session } from "@supabase/supabase-js";
 import { AdminMultiMap } from "@/components/AdminMultiMap";
@@ -289,28 +290,30 @@ export function AdminPanel() {
               className="btn btn-ghost btn-touch"
               onClick={() =>
                 downloadBlob(
-                  `mediciones-${new Date().toISOString().slice(0, 10)}.csv`,
-                  measurementsToCsv(filtered),
+                  `informe-mediciones-${new Date().toISOString().slice(0, 10)}.csv`,
+                  measurementsToEnrichedCsv(filtered),
                   "text/csv;charset=utf-8"
                 )
               }
               disabled={!filtered.length}
+              title="CSV con columnas fijas para Excel / informe"
             >
-              CSV
+              CSV informe
             </button>
             <button
               type="button"
               className="btn btn-ghost btn-touch"
               onClick={() =>
                 downloadBlob(
-                  `mediciones-${new Date().toISOString().slice(0, 10)}.json`,
-                  JSON.stringify(filtered, null, 2),
+                  `informe-mediciones-${new Date().toISOString().slice(0, 10)}.json`,
+                  measurementsToEnrichedJson(filtered),
                   "application/json"
                 )
               }
               disabled={!filtered.length}
+              title="JSON estructurado para sistemas"
             >
-              JSON
+              JSON informe
             </button>
             <button
               type="button"

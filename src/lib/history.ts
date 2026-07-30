@@ -178,6 +178,8 @@ export function normalizeResult(raw: unknown): SpeedTestResult | null {
         : null,
     runIndex: typeof r.runIndex === "number" ? r.runIndex : undefined,
     runTotal: typeof r.runTotal === "number" ? r.runTotal : undefined,
+    isSeriesAggregate: Boolean(r.isSeriesAggregate),
+    seriesId: typeof r.seriesId === "string" ? r.seriesId : undefined,
     plan: {
       ...emptyPlan(),
       ...(r.plan && typeof r.plan === "object" ? r.plan : {}),
@@ -249,6 +251,8 @@ export function compactResult(result: SpeedTestResult): SpeedTestResult {
     geo: n.geo,
     runIndex: n.runIndex,
     runTotal: n.runTotal,
+    isSeriesAggregate: n.isSeriesAggregate,
+    seriesId: n.seriesId,
   };
 }
 

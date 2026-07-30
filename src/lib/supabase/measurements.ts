@@ -161,42 +161,4 @@ export async function fetchAllMeasurements(limit = 500): Promise<{
   return { ok: true, rows: (data ?? []) as MeasurementRow[] };
 }
 
-export function measurementsToCsv(rows: MeasurementRow[]): string {
-  const headers = [
-    "id",
-    "finished_at",
-    "operator",
-    "access_type",
-    "download_mbps",
-    "upload_mbps",
-    "latency_ms",
-    "jitter_ms",
-    "cvm_pct",
-    "meets_cvm",
-    "latitude",
-    "longitude",
-    "geo_accuracy_m",
-    "isp_organization",
-    "asn",
-    "client_ip",
-    "plan_down_mbps",
-    "plan_up_mbps",
-    "confidence_score",
-    "signature_hash",
-  ];
-  const esc = (v: unknown) => {
-    if (v == null) return "";
-    const s = String(v);
-    if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-    return s;
-  };
-  const lines = [headers.join(",")];
-  for (const r of rows) {
-    lines.push(
-      headers
-        .map((h) => esc((r as unknown as Record<string, unknown>)[h]))
-        .join(",")
-    );
-  }
-  return lines.join("\n");
-}
+export { measurementsToEnrichedCsv as measurementsToCsv } from "@/lib/exportReport";

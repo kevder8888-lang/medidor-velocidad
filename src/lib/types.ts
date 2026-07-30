@@ -201,6 +201,10 @@ export interface SpeedTestResult {
   geo: ResultGeo | null;
   runIndex?: number;
   runTotal?: number;
+  /** true si es el resultado oficial (mediana) de una serie ×N */
+  isSeriesAggregate?: boolean;
+  /** id de la serie (compartido por corridas + agregado) */
+  seriesId?: string;
   plan: UserPlan;
   latency: LatencyResult;
   download: ThroughputResult;

@@ -40,9 +40,33 @@ function mapPosition(pos: GeolocationPosition): DeviceGeo {
   };
 }
 
+export const GPS_CONSENT_KEY = "osiptel_gps_consent_v1";
+
+export type GpsConsent = "granted" | "denied" | null;
+
+export function loadGpsConsent(): GpsConsent {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = localStorage.getItem(GPS_CONSENT_KEY);
+    if (v === "granted" || v === "denied") return v;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+export function saveGpsConsent(c: "granted" | "denied"): void {
+  try {
+    localStorage.setItem(GPS_CONSENT_KEY, c);
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
  * Geolocalización del equipo (GPS/red del dispositivo).
  * En Android Chrome pide permiso y usa el sensor del teléfono.
+ * Solo llamar si el usuario dio consentimiento explícito en la app.
  */
 export function getDevicePosition(options?: {
   timeoutMs?: number;

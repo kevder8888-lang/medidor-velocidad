@@ -1845,6 +1845,52 @@ code {
   font-size: 0.85em;
 }
 
+/* Consentimiento GPS */
+.gps-consent {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #fbfcfe;
+}
+
+.gps-consent-pending {
+  border-color: rgba(196, 127, 0, 0.45);
+  background: #fff8e8;
+}
+
+.gps-consent-ok {
+  border-color: rgba(27, 157, 107, 0.35);
+  background: rgba(27, 157, 107, 0.06);
+}
+
+.gps-consent-no {
+  border-color: var(--border);
+  background: #f4f6f8;
+}
+
+.gps-consent-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--osiptel-blue);
+  margin-bottom: 6px;
+}
+
+.gps-consent-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0 0 10px;
+}
+
+.gps-consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* Admin */
 .admin-login-card {
   max-width: 420px;
