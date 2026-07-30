@@ -205,7 +205,12 @@ function buildReportHtml(
   <h2>Registro de la medición</h2>
   <table>
     <tr><th>Fecha y hora</th><td>${escapeHtml(finished)}</td></tr>
-    <tr><th>Operador</th><td>${escapeHtml(result.plan?.operator || result.networkIdentity?.isp.displayName || "—")}</td></tr>
+    <tr><th>Operador (red detectada)</th><td>${escapeHtml(result.networkIdentity?.isp.brand || result.networkIdentity?.isp.displayName || result.plan?.operator || "—")}</td></tr>
+    <tr><th>Organización ASN</th><td>${escapeHtml(result.networkIdentity?.isp.organization || "—")}${
+      result.networkIdentity?.isp.asn != null
+        ? ` · AS${result.networkIdentity.isp.asn}`
+        : ""
+    }</td></tr>
     <tr><th>Bajada (DL)</th><td>${formatMbps(safeNum(download.medianMbps))} Mbps</td></tr>
     <tr><th>Subida (UL)</th><td>${formatMbps(safeNum(upload.medianMbps))} Mbps</td></tr>
     <tr><th>Latencia / jitter</th><td>${formatMs(safeNum(latency.medianMs))} ms / ${formatMs(safeNum(latency.jitterMs))} ms</td></tr>

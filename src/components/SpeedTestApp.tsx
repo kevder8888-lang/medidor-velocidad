@@ -154,9 +154,10 @@ export function SpeedTestApp() {
         setLiveIsp(isp);
         // Auto-fill operator only if the user left it empty
         const suggested = suggestOperatorName(isp);
-        if (suggested) {
+        // Refrescar con la red actual (evita dejar "Claro" de una sesión previa en Entel)
+        if (suggested && isp.confidence !== "baja") {
           setPlan((p) =>
-            p.operator?.trim() ? p : { ...p, operator: suggested }
+            p.operator === suggested ? p : { ...p, operator: suggested }
           );
         }
       } catch {
@@ -265,9 +266,12 @@ export function SpeedTestApp() {
       notes: res.networkIdentity.isp.notes,
     };
     setLiveIsp(isp);
+    // Actualizar operador del formulario con la red ACTUAL (no dejar Claro viejo en Entel)
     const suggested = suggestOperatorName(isp);
-    if (suggested) {
-      setPlan((p) => (p.operator?.trim() ? p : { ...p, operator: suggested }));
+    if (suggested && isp.confidence !== "baja") {
+      setPlan((p) =>
+        p.operator === suggested ? p : { ...p, operator: suggested }
+      );
     }
   }
 
@@ -383,9 +387,13 @@ export function SpeedTestApp() {
           ].filter(Boolean) as string[],
         };
 
-        // sincronizar plan UI si se rellenó operador
-        if (resolvedPlan.operator && !plan.operator?.trim()) {
-          setPlan((p) => ({ ...p, operator: resolvedPlan.operator }));
+        // Sincronizar operador del formulario con la red detectada en esta medición
+        if (resolvedPlan.operator) {
+          setPlan((p) =>
+            p.operator === resolvedPlan.operator
+              ? p
+              : { ...p, operator: resolvedPlan.operator }
+          );
         }
 
         setResult(enriched);
@@ -917,13 +925,25 @@ export function SpeedTestApp() {
                       </span>
                     </div>
                     <div className="kv-row">
-                      <span className="k">Operador</span>
+                      <span className="k">Operador (red detectada)</span>
                       <span className="v">
-                        {result.plan?.operator ||
+                        {result.networkIdentity?.isp.brand ||
                           result.networkIdentity?.isp.displayName ||
+                          result.plan?.operator ||
                           "—"}
                       </span>
                     </div>
+                    {result.networkIdentity?.isp.organization && (
+                      <div className="kv-row">
+                        <span className="k">Organización ASN</span>
+                        <span className="v">
+                          {result.networkIdentity.isp.organization}
+                          {result.networkIdentity.isp.asn != null
+                            ? ` · AS${result.networkIdentity.isp.asn}`
+                            : ""}
+                        </span>
+                      </div>
+                    )}
                     <div className="kv-row">
                       <span className="k">↓ DL / ↑ UL</span>
                       <span className="v">

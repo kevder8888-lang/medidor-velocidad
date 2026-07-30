@@ -28,11 +28,13 @@ export function summarizeMeasurement(r: SpeedTestResult): {
   const time = r.finishedAt
     ? new Date(r.finishedAt).toLocaleString("es-PE")
     : "—";
+  // Prioridad: red detectada (ASN/org) > plan declarado
+  // Evita mostrar "Claro" del plan viejo cuando la medición fue en Entel
   const operator =
-    r.plan?.operator?.trim() ||
     r.networkIdentity?.isp.brand ||
     r.networkIdentity?.isp.displayName ||
     r.serverMeta?.asOrganization ||
+    r.plan?.operator?.trim() ||
     "—";
   const coords =
     r.geo?.latitude != null && r.geo?.longitude != null
@@ -68,17 +70,28 @@ export function formatSummaryLine(r: SpeedTestResult): string {
     .join(" · ");
 }
 
-/** Asegura plan con operador detectado al guardar */
+/**
+ * Plan guardado con la medición.
+ * El campo operator refleja la red detectada si hay marca confiable;
+ * si no, el valor que el usuario puso en el formulario.
+ */
 export function withResolvedPlan(
   result: SpeedTestResult,
   plan: UserPlan
 ): UserPlan {
-  const op =
-    plan.operator?.trim() ||
+  const detected =
     result.networkIdentity?.isp.brand ||
     result.networkIdentity?.isp.displayName ||
-    plan.operator ||
-    "";
+    null;
+  const conf = result.networkIdentity?.isp.confidence;
+  // Si la detección es alta/media, el registro usa el operador de RED actual
+  const op =
+    detected && conf !== "baja"
+      ? detected
+      : plan.operator?.trim() ||
+        detected ||
+        result.plan?.operator ||
+        "";
   return {
     ...plan,
     ...result.plan,
