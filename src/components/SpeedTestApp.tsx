@@ -24,6 +24,7 @@ import {
   exportResultJson,
   exportResultPdf,
 } from "@/lib/pdfExport";
+import { isAndroid, releaseWakeLock, requestWakeLock } from "@/lib/mobile";
 import { shortHash } from "@/lib/signature";
 import { formatMbps, formatMs } from "@/lib/stats";
 import type {
@@ -87,11 +88,14 @@ export function SpeedTestApp() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>("medir");
+  const [android, setAndroid] = useState(false);
+  const [planOpen, setPlanOpen] = useState(true);
 
   useEffect(() => {
     setPlan(loadPlan());
     setHistory(loadHistory());
     setServers(getMeasurementServers());
+    setAndroid(isAndroid());
     try {
       const pref = localStorage.getItem(SERVER_KEY);
       if (pref) setServerPref(pref);
@@ -183,11 +187,24 @@ export function SpeedTestApp() {
     setRunning(true);
     setResult(null);
     setProbes([]);
+    setTab("medir");
     setProgress({
       phase: "precheck",
       progress: 1,
       message: "Iniciando…",
     });
+
+    // Scroll gauge into view on phones
+    try {
+      document.getElementById("measure-card")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    } catch {
+      /* ignore */
+    }
+
+    const wake = await requestWakeLock();
     try {
       const res = await runSpeedTest(
         plan,
@@ -206,7 +223,15 @@ export function SpeedTestApp() {
             "La medición terminó, pero no se pudo guardar en el historial."
         );
       } else {
-        setInfo("Medición guardada en el historial local de este navegador.");
+        setInfo("Medición guardada en el historial de este dispositivo.");
+      }
+      try {
+        document.getElementById("results-anchor")?.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+        });
+      } catch {
+        /* ignore */
       }
     } catch (e) {
       const msg =
@@ -219,6 +244,7 @@ export function SpeedTestApp() {
       });
     } finally {
       setRunning(false);
+      await releaseWakeLock(wake);
     }
   }
 
@@ -242,16 +268,29 @@ export function SpeedTestApp() {
   return (
     <>
       <BrandHeader />
-      <div className="app">
-        <div className="meta-chips">
-          <span className="chip">Protocolo {PROTOCOL_VERSION}</span>
-          <span className="chip">Cliente {CLIENT_VERSION}</span>
-          <span className="chip">{selectedServerLabel}</span>
+      <div
+        className={`app ${running ? "is-running" : ""} ${
+          tab === "medir" ? "has-sticky-cta" : "no-sticky-cta"
+        }`}
+      >
+        {android && (
+          <div className="android-tip" role="note">
+            <strong>Android:</strong> usa Wi‑Fi 5 GHz si puedes, cierra descargas
+            y apps en segundo plano. Deja la pantalla encendida (~30 s). Puedes
+            «Añadir a pantalla de inicio» desde el menú del navegador.
+          </div>
+        )}
+
+        <div className="meta-chips meta-chips-scroll" aria-label="Metadatos">
           <span className="chip">CVM {CVM_THRESHOLD_PCT}%</span>
+          <span className="chip">{selectedServerLabel}</span>
+          <span className="chip desktop-only">Protocolo {PROTOCOL_VERSION}</span>
+          <span className="chip desktop-only">Cliente {CLIENT_VERSION}</span>
           <span className="chip">Historial: {history.length}</span>
         </div>
 
-        <div className="tabs">
+        {/* Tabs desktop; en móvil se usa bottom nav */}
+        <div className="tabs tabs-desktop">
           <button
             type="button"
             className={`tab ${tab === "medir" ? "active" : ""}`}
@@ -264,7 +303,7 @@ export function SpeedTestApp() {
             className={`tab ${tab === "historial" ? "active" : ""}`}
             onClick={() => setTab("historial")}
           >
-            Historial y agregados ({history.length})
+            Historial ({history.length})
           </button>
         </div>
 
@@ -379,7 +418,7 @@ export function SpeedTestApp() {
                         </span>
                         <button
                           type="button"
-                          className="btn btn-ghost btn-xs"
+                          className="btn btn-ghost btn-touch"
                           disabled={exportingId === h.id}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -391,7 +430,7 @@ export function SpeedTestApp() {
                         </button>
                         <button
                           type="button"
-                          className="btn btn-ghost btn-xs"
+                          className="btn btn-ghost btn-touch"
                           onClick={(e) => {
                             e.stopPropagation();
                             exportResultJson(h);
@@ -403,7 +442,7 @@ export function SpeedTestApp() {
                         </button>
                         <button
                           type="button"
-                          className="btn btn-ghost btn-xs danger-text"
+                          className="btn btn-ghost btn-touch danger-text"
                           onClick={(e) => {
                             e.stopPropagation();
                             if (!confirm("¿Eliminar esta medición del historial?")) {
@@ -416,7 +455,7 @@ export function SpeedTestApp() {
                           }}
                           title="Eliminar"
                         >
-                          ✕
+                          Borrar
                         </button>
                       </div>
                     </div>
@@ -427,7 +466,7 @@ export function SpeedTestApp() {
           </div>
         ) : (
           <div className="grid grid-main">
-            <section className="card">
+            <section className="card measure-card" id="measure-card">
               <h2>Medición</h2>
 
               <div className="gauge-wrap">
@@ -499,11 +538,12 @@ export function SpeedTestApp() {
               </div>
               <div className="status-line">{progress.message}</div>
 
+              <div id="results-anchor" />
               {error && <div className="error-box">{error}</div>}
               {info && <div className="info-box">{info}</div>}
 
               {result && (
-                <div className="btn-row" style={{ marginTop: 14 }}>
+                <div className="btn-row export-row" style={{ marginTop: 14 }}>
                   <button
                     type="button"
                     className="btn btn-secondary"
@@ -511,7 +551,7 @@ export function SpeedTestApp() {
                     onClick={() => void handleExportPdf(result)}
                   >
                     {exportingId === result.id
-                      ? "Generando informe…"
+                      ? "Generando…"
                       : "Exportar PDF"}
                   </button>
                   <button
@@ -520,7 +560,7 @@ export function SpeedTestApp() {
                     disabled={exportingId === result.id}
                     onClick={() => void handleDownloadHtml(result)}
                   >
-                    Descargar HTML
+                    HTML
                   </button>
                   <button
                     type="button"
@@ -530,15 +570,16 @@ export function SpeedTestApp() {
                       setInfo("JSON firmado descargado.");
                     }}
                   >
-                    JSON firmado
+                    JSON
                   </button>
                 </div>
               )}
 
-              <div style={{ marginTop: 18 }}>
+              {/* CTA principal en desktop; en móvil usa la barra fija inferior */}
+              <div className="start-wrap desktop-only" style={{ marginTop: 18 }}>
                 <button
                   className="btn btn-primary"
-                  onClick={start}
+                  onClick={() => void start()}
                   disabled={running}
                   type="button"
                 >
@@ -548,19 +589,41 @@ export function SpeedTestApp() {
             </section>
 
             <div className="grid">
-              <section className="card">
-                <h2>Plan y servidor</h2>
-                <div className="plan-form">
+              <section className="card plan-card">
+                <button
+                  type="button"
+                  className="plan-toggle mobile-only"
+                  aria-expanded={planOpen}
+                  onClick={() => setPlanOpen((o) => !o)}
+                >
+                  <span>
+                    <strong>Plan y servidor</strong>
+                    <span className="plan-toggle-sub">
+                      {plan.downMbps}/{plan.upMbps ?? "—"} Mbps
+                      {plan.operator ? ` · ${plan.operator}` : ""}
+                    </span>
+                  </span>
+                  <span className="plan-toggle-chevron" aria-hidden>
+                    {planOpen ? "▾" : "▸"}
+                  </span>
+                </button>
+                <h2 className="desktop-only">Plan y servidor</h2>
+                <div
+                  className={`plan-form ${planOpen ? "is-open" : ""}`}
+                  id="plan-form"
+                >
                   <div className="field-row">
                     <div className="field">
                       <label htmlFor="down">Bajada contratada (Mbps)</label>
                       <input
                         id="down"
                         type="number"
+                        inputMode="decimal"
                         min={1}
                         step={1}
                         value={plan.downMbps || ""}
                         disabled={running}
+                        autoComplete="off"
                         onChange={(e) =>
                           setPlan((p) => ({
                             ...p,
@@ -574,10 +637,12 @@ export function SpeedTestApp() {
                       <input
                         id="up"
                         type="number"
+                        inputMode="decimal"
                         min={0}
                         step={1}
                         value={plan.upMbps ?? ""}
                         disabled={running}
+                        autoComplete="off"
                         onChange={(e) =>
                           setPlan((p) => ({
                             ...p,
@@ -864,7 +929,7 @@ export function SpeedTestApp() {
           </div>
         )}
 
-        <div className="footer-note">
+        <div className="footer-note desktop-only">
           <strong>PDF e historial.</strong> Cada medición se guarda en este
           navegador (hasta 50). Exporta PDF desde el resultado o desde el
           historial: se abre un informe con logos embebidos; elige{" "}
@@ -872,6 +937,70 @@ export function SpeedTestApp() {
           bloqueado, se descarga HTML automáticamente.
         </div>
       </div>
+
+      {/* Barra fija de acción (Android / móvil) */}
+      {tab === "medir" && (
+        <div className="sticky-cta mobile-only" role="region" aria-label="Acción principal">
+          <div className="sticky-cta-inner">
+            {running ? (
+              <div className="sticky-cta-status">
+                <span className="sticky-cta-pulse" aria-hidden />
+                <div>
+                  <strong>{PHASE_LABEL[progress.phase]}</strong>
+                  <span>
+                    {progress.liveMbps != null
+                      ? `${formatMbps(progress.liveMbps)} Mbps · ${Math.round(progress.progress)}%`
+                      : progress.message}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="sticky-cta-hint">
+                Plan {plan.downMbps}/{plan.upMbps ?? "—"} Mbps
+                {result
+                  ? ` · Última ↓ ${formatMbps(result.download?.medianMbps ?? 0)}`
+                  : ""}
+              </div>
+            )}
+            <button
+              type="button"
+              className="btn btn-primary sticky-cta-btn"
+              onClick={() => void start()}
+              disabled={running}
+            >
+              {running ? "Midiendo…" : result ? "Medir de nuevo" : "Iniciar medición"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Navegación inferior táctil */}
+      <nav className="bottom-nav mobile-only" aria-label="Navegación principal">
+        <button
+          type="button"
+          className={`bottom-nav-item ${tab === "medir" ? "active" : ""}`}
+          onClick={() => setTab("medir")}
+        >
+          <span className="bottom-nav-icon" aria-hidden>
+            ◎
+          </span>
+          <span>Medir</span>
+        </button>
+        <button
+          type="button"
+          className={`bottom-nav-item ${tab === "historial" ? "active" : ""}`}
+          onClick={() => setTab("historial")}
+        >
+          <span className="bottom-nav-icon" aria-hidden>
+            ≡
+          </span>
+          <span>Historial</span>
+          {history.length > 0 && (
+            <span className="bottom-nav-badge">{history.length}</span>
+          )}
+        </button>
+      </nav>
+
       <BrandFooter />
     </>
   );

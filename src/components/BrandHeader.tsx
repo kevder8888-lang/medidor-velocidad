@@ -28,13 +28,11 @@ export function BrandHeader() {
               height={18}
             />
           </a>
-          <span className="gov-topbar-label">
-            Plataforma del Estado Peruano
-          </span>
+          <span className="gov-topbar-label">Estado Peruano</span>
         </div>
       </div>
 
-      {/* Cabecera OSIPTEL */}
+      {/* Cabecera OSIPTEL — compacta en móvil */}
       <header className="inst-header">
         <div className="inst-header-inner">
           <a
@@ -55,15 +53,19 @@ export function BrandHeader() {
           <div className="inst-title-block">
             <p className="inst-kicker">{BRAND.name}</p>
             <h1 className="inst-title">{BRAND.productName}</h1>
-            <p className="inst-subtitle">{BRAND.productSubtitle}</p>
+            <p className="inst-subtitle desktop-only">{BRAND.productSubtitle}</p>
           </div>
 
-          <div className="inst-badges">
+          <div className="inst-badges desktop-only">
             <span className="inst-badge">MVP regulatorio</span>
             <span className="inst-badge inst-badge-soft">CVM 70%</span>
           </div>
         </div>
-        <p className="inst-tagline">{BRAND.tagline}</p>
+        <p className="inst-tagline desktop-only">{BRAND.tagline}</p>
+        <div className="inst-badges mobile-only inst-badges-mobile">
+          <span className="inst-badge inst-badge-soft">CVM 70%</span>
+          <span className="inst-badge inst-badge-soft">Internet fija</span>
+        </div>
       </header>
     </div>
   );
