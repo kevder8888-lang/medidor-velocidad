@@ -1897,9 +1897,10 @@ code {
 }
 
 .map-frame-hero {
-  aspect-ratio: 1 / 1.05;
-  min-height: min(52dvh, 420px);
-  max-height: 70dvh;
+  aspect-ratio: auto;
+  height: min(52dvh, calc(var(--app-height, 100dvh) * 0.48), 420px);
+  min-height: 240px;
+  max-height: min(70dvh, calc(var(--app-height, 100dvh) * 0.55));
 }
 
 .map-frame-empty {
