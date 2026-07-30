@@ -137,6 +137,16 @@ export interface ResultSignature {
   payloadVersion: string;
 }
 
+/** Device GPS / network location captured on the handset */
+export interface ResultGeo {
+  latitude: number;
+  longitude: number;
+  accuracyM: number | null;
+  altitudeM: number | null;
+  timestamp: string;
+  source: string;
+}
+
 export interface SpeedTestResult {
   id: string;
   protocolVersion: string;
@@ -154,6 +164,12 @@ export interface SpeedTestResult {
   serverProbes: ServerProbe[];
   serverMeta: ServerMetaInfo | null;
   networkIdentity: NetworkIdentity | null;
+  /** GPS del dispositivo al medir (Android/browser geolocation) */
+  geo: ResultGeo | null;
+  /** 1-based index within a multi-run batch */
+  runIndex?: number;
+  /** Total runs requested in the batch */
+  runTotal?: number;
   plan: UserPlan;
   latency: LatencyResult;
   download: ThroughputResult;

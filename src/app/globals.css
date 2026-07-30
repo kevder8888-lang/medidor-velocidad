@@ -1436,9 +1436,13 @@ code {
     border-top: 1px solid var(--border);
     box-shadow: 0 -4px 20px rgba(0, 61, 122, 0.08);
     display: grid !important;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     padding-left: var(--safe-left);
     padding-right: var(--safe-right);
+  }
+
+  .bottom-nav-center .bottom-nav-icon {
+    font-size: 20px;
   }
 
   .bottom-nav-item {
@@ -1520,6 +1524,128 @@ code {
   .plan-form {
     display: grid !important;
   }
+}
+
+/* Repeticiones compactas en el medidor */
+.measure-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.measure-card-head h2 {
+  margin-bottom: 0;
+}
+
+.reps-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--osiptel-surface);
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.reps-label {
+  line-height: 1;
+  opacity: 0.8;
+}
+
+.reps-input {
+  width: 2.1rem;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 750;
+  color: var(--osiptel-blue-dark);
+  text-align: center;
+  padding: 2px 0;
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.reps-input::-webkit-outer-spin-button,
+.reps-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Efecto al medir */
+.gauge {
+  position: relative;
+}
+
+.gauge-active .gauge-ring {
+  animation: gauge-spin-glow 2.2s ease-in-out infinite;
+}
+
+.gauge-ripple {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 121, 193, 0.35);
+  pointer-events: none;
+  animation: ripple-out 2s ease-out infinite;
+}
+
+.gauge-ripple.r2 {
+  animation-delay: 0.45s;
+}
+.gauge-ripple.r3 {
+  animation-delay: 0.9s;
+}
+
+@keyframes ripple-out {
+  0% {
+    transform: scale(0.72);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes gauge-spin-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(0, 121, 193, 0.25));
+  }
+  50% {
+    filter: drop-shadow(0 0 22px rgba(0, 121, 193, 0.55));
+  }
+}
+
+.measure-card.is-measuring {
+  box-shadow:
+    0 8px 28px rgba(0, 61, 122, 0.1),
+    0 0 0 2px rgba(0, 121, 193, 0.2);
+}
+
+/* Mapa */
+.map-frame-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: #e8eef5;
+  aspect-ratio: 4 / 3;
+  min-height: 220px;
+}
+
+.map-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
 }
 
 /* ISP card */

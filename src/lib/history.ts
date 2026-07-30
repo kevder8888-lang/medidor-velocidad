@@ -2,6 +2,7 @@ import type {
   ConfidenceResult,
   LatencyResult,
   PreCheckResult,
+  ResultGeo,
   SpeedTestResult,
   ThroughputResult,
   UserPlan,
@@ -152,6 +153,22 @@ export function normalizeResult(raw: unknown): SpeedTestResult | null {
     serverProbes: Array.isArray(r.serverProbes) ? r.serverProbes : [],
     serverMeta: r.serverMeta ?? null,
     networkIdentity: r.networkIdentity ?? null,
+    geo:
+      r.geo &&
+      typeof r.geo === "object" &&
+      typeof (r.geo as ResultGeo).latitude === "number" &&
+      typeof (r.geo as ResultGeo).longitude === "number"
+        ? {
+            latitude: (r.geo as ResultGeo).latitude,
+            longitude: (r.geo as ResultGeo).longitude,
+            accuracyM: (r.geo as ResultGeo).accuracyM ?? null,
+            altitudeM: (r.geo as ResultGeo).altitudeM ?? null,
+            timestamp: String((r.geo as ResultGeo).timestamp ?? ""),
+            source: String((r.geo as ResultGeo).source ?? "unknown"),
+          }
+        : null,
+    runIndex: typeof r.runIndex === "number" ? r.runIndex : undefined,
+    runTotal: typeof r.runTotal === "number" ? r.runTotal : undefined,
     plan: {
       ...emptyPlan(),
       ...(r.plan && typeof r.plan === "object" ? r.plan : {}),
@@ -220,6 +237,9 @@ export function compactResult(result: SpeedTestResult): SpeedTestResult {
           },
         }
       : null,
+    geo: n.geo,
+    runIndex: n.runIndex,
+    runTotal: n.runTotal,
   };
 }
 

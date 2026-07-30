@@ -564,6 +564,7 @@ export async function runSpeedTest(
     serverProbes,
     serverMeta,
     networkIdentity,
+    geo: null,
     plan: { ...plan },
     latency,
     download,

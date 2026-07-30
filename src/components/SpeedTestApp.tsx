@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AggregatesPanel } from "@/components/AggregatesPanel";
 import { BrandFooter } from "@/components/BrandFooter";
 import { BrandHeader } from "@/components/BrandHeader";
+import { MapPanel } from "@/components/MapPanel";
 import { Sparkline } from "@/components/Sparkline";
+import type { DeviceGeo } from "@/lib/geo";
+import { getDevicePosition } from "@/lib/geo";
 import {
   clearHistory,
   downloadTextFile,
@@ -76,7 +79,9 @@ function loadPlan(): UserPlan {
   return { downMbps: 100, upMbps: 50, operator: "", technology: "ftth" };
 }
 
-type TabId = "medir" | "historial";
+type TabId = "medir" | "mapa" | "historial";
+
+const REPS_KEY = "osiptel_medidor_reps_v1";
 
 export function SpeedTestApp() {
   const [plan, setPlan] = useState<UserPlan>({
@@ -105,6 +110,10 @@ export function SpeedTestApp() {
   const [liveAccess, setLiveAccess] = useState<NetworkAccessKind>("unknown");
   const [liveIsp, setLiveIsp] = useState<IspIdentity | null>(null);
   const [ispLoading, setIspLoading] = useState(true);
+  /** Número de repeticiones de la prueba (1–10) */
+  const [reps, setReps] = useState(1);
+  const [repProgress, setRepProgress] = useState({ current: 0, total: 0 });
+  const [deviceGeo, setDeviceGeo] = useState<DeviceGeo | null>(null);
 
   useEffect(() => {
     setPlan(loadPlan());
@@ -114,6 +123,11 @@ export function SpeedTestApp() {
     try {
       const pref = localStorage.getItem(SERVER_KEY);
       if (pref) setServerPref(pref);
+      const r = localStorage.getItem(REPS_KEY);
+      if (r) {
+        const n = Math.min(10, Math.max(1, Number(r) || 1));
+        setReps(n);
+      }
     } catch {
       /* ignore */
     }
@@ -158,6 +172,14 @@ export function SpeedTestApp() {
       /* ignore */
     }
   }, [serverPref]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(REPS_KEY, String(reps));
+    } catch {
+      /* ignore */
+    }
+  }, [reps]);
 
   const gaugeValue = useMemo(() => {
     if (progress.liveMbps != null && running) return progress.liveMbps;
@@ -215,25 +237,50 @@ export function SpeedTestApp() {
     }
   }
 
+  function applyNetworkFromResult(res: SpeedTestResult) {
+    if (!res.networkIdentity) return;
+    setLiveAccess(res.networkIdentity.access);
+    const isp: IspIdentity = {
+      brand: res.networkIdentity.isp.brand,
+      organization: res.networkIdentity.isp.organization,
+      asn: res.networkIdentity.isp.asn,
+      clientIp: res.networkIdentity.isp.clientIp,
+      country: res.networkIdentity.isp.country,
+      city: res.networkIdentity.isp.city,
+      colo: res.networkIdentity.isp.colo,
+      source: res.networkIdentity.isp.source as IspIdentity["source"],
+      category: res.networkIdentity.isp.category as IspIdentity["category"],
+      displayName: res.networkIdentity.isp.displayName,
+      confidence: res.networkIdentity.isp.confidence,
+      notes: res.networkIdentity.isp.notes,
+    };
+    setLiveIsp(isp);
+    const suggested = suggestOperatorName(isp);
+    if (suggested) {
+      setPlan((p) => (p.operator?.trim() ? p : { ...p, operator: suggested }));
+    }
+  }
+
   async function start() {
     if (running) return;
     if (!plan.downMbps || plan.downMbps <= 0) {
       setError("Indica la velocidad de bajada contratada (Mbps).");
       return;
     }
+    const total = Math.min(10, Math.max(1, reps));
     setError(null);
     setInfo(null);
     setRunning(true);
     setResult(null);
     setProbes([]);
     setTab("medir");
+    setRepProgress({ current: 0, total });
     setProgress({
       phase: "precheck",
       progress: 1,
-      message: "Iniciando…",
+      message: total > 1 ? `Iniciando serie de ${total} mediciones…` : "Iniciando…",
     });
 
-    // Scroll gauge into view on phones
     try {
       document.getElementById("measure-card")?.scrollIntoView({
         behavior: "smooth",
@@ -243,65 +290,95 @@ export function SpeedTestApp() {
       /* ignore */
     }
 
-    const wake = await requestWakeLock();
+    // GPS del equipo (Android / navegador) — best effort, no bloquea la medición
+    let geoCapture: DeviceGeo | null = deviceGeo;
     try {
-      const res = await runSpeedTest(
-        plan,
-        (ev) => {
-          onProgress(ev);
-        },
-        serverPref as "auto" | string
-      );
-      setResult(res);
-      setProbes(res.serverProbes ?? []);
-      if (res.networkIdentity) {
-        setLiveAccess(res.networkIdentity.access);
-        setLiveIsp({
-          brand: res.networkIdentity.isp.brand,
-          organization: res.networkIdentity.isp.organization,
-          asn: res.networkIdentity.isp.asn,
-          clientIp: res.networkIdentity.isp.clientIp,
-          country: res.networkIdentity.isp.country,
-          city: res.networkIdentity.isp.city,
-          colo: res.networkIdentity.isp.colo,
-          source: res.networkIdentity.isp.source as IspIdentity["source"],
-          category: res.networkIdentity.isp
-            .category as IspIdentity["category"],
-          displayName: res.networkIdentity.isp.displayName,
-          confidence: res.networkIdentity.isp.confidence,
-          notes: res.networkIdentity.isp.notes,
-        });
-        const suggested = suggestOperatorName({
-          brand: res.networkIdentity.isp.brand,
-          organization: res.networkIdentity.isp.organization,
-          asn: res.networkIdentity.isp.asn,
-          clientIp: res.networkIdentity.isp.clientIp,
-          country: res.networkIdentity.isp.country,
-          city: res.networkIdentity.isp.city,
-          colo: res.networkIdentity.isp.colo,
-          source: res.networkIdentity.isp.source as IspIdentity["source"],
-          category: res.networkIdentity.isp
-            .category as IspIdentity["category"],
-          displayName: res.networkIdentity.isp.displayName,
-          confidence: res.networkIdentity.isp.confidence,
-          notes: res.networkIdentity.isp.notes,
-        });
-        if (suggested) {
-          setPlan((p) =>
-            p.operator?.trim() ? p : { ...p, operator: suggested }
-          );
-        }
-      }
-      const saved = saveResult(res);
-      setHistory(saved.history);
-      if (!saved.ok) {
-        setError(
-          saved.error ||
-            "La medición terminó, pero no se pudo guardar en el historial."
+      geoCapture = await getDevicePosition({
+        highAccuracy: true,
+        timeoutMs: 12_000,
+      });
+      setDeviceGeo(geoCapture);
+    } catch {
+      /* permiso denegado o timeout: se mide igual */
+    }
+
+    const wake = await requestWakeLock();
+    let last: SpeedTestResult | null = null;
+    let saveOk = true;
+    let hist = loadHistory();
+
+    try {
+      for (let i = 0; i < total; i++) {
+        setRepProgress({ current: i + 1, total });
+        const res = await runSpeedTest(
+          plan,
+          (ev) => {
+            const base = (i / total) * 100;
+            const slice = ev.progress / total;
+            onProgress({
+              ...ev,
+              progress: Math.min(99, base + slice),
+              message:
+                total > 1
+                  ? `Repetición ${i + 1}/${total} · ${ev.message}`
+                  : ev.message,
+            });
+          },
+          serverPref as "auto" | string
         );
-      } else {
-        setInfo("Medición guardada en el historial de este dispositivo.");
+
+        const enriched: SpeedTestResult = {
+          ...res,
+          geo: geoCapture
+            ? {
+                latitude: geoCapture.latitude,
+                longitude: geoCapture.longitude,
+                accuracyM: geoCapture.accuracyM,
+                altitudeM: geoCapture.altitudeM,
+                timestamp: geoCapture.timestamp,
+                source: geoCapture.source,
+              }
+            : null,
+          runIndex: i + 1,
+          runTotal: total,
+          notes: [
+            ...res.notes,
+            total > 1 ? `Serie: repetición ${i + 1} de ${total}.` : null,
+            geoCapture
+              ? `GPS dispositivo: ${geoCapture.latitude.toFixed(5)}, ${geoCapture.longitude.toFixed(5)} (±${Math.round(geoCapture.accuracyM ?? 0)} m).`
+              : "Sin coordenadas del dispositivo (permiso GPS no concedido o no disponible).",
+          ].filter(Boolean) as string[],
+        };
+
+        setResult(enriched);
+        setProbes(enriched.serverProbes ?? []);
+        applyNetworkFromResult(enriched);
+        const saved = saveResult(enriched);
+        hist = saved.history;
+        setHistory(hist);
+        if (!saved.ok) saveOk = false;
+        last = enriched;
       }
+
+      if (last) {
+        setProgress({
+          phase: "done",
+          progress: 100,
+          message:
+            total > 1
+              ? `Serie completada (${total} mediciones)`
+              : "Prueba completada",
+          liveMbps: last.download.medianMbps,
+        });
+        setInfo(
+          saveOk
+            ? total > 1
+              ? `${total} mediciones guardadas en el historial.`
+              : "Medición guardada en el historial de este dispositivo."
+            : "Serie terminada, pero hubo un problema al guardar el historial."
+        );
+      }
+
       try {
         document.getElementById("results-anchor")?.scrollIntoView({
           behavior: "smooth",
@@ -321,6 +398,7 @@ export function SpeedTestApp() {
       });
     } finally {
       setRunning(false);
+      setRepProgress({ current: 0, total: 0 });
       await releaseWakeLock(wake);
     }
   }
@@ -483,6 +561,13 @@ export function SpeedTestApp() {
             onClick={() => setTab("medir")}
           >
             Medición
+          </button>
+          <button
+            type="button"
+            className={`tab ${tab === "mapa" ? "active" : ""}`}
+            onClick={() => setTab("mapa")}
+          >
+            Mapa
           </button>
           <button
             type="button"
@@ -650,13 +735,52 @@ export function SpeedTestApp() {
               )}
             </section>
           </div>
+        ) : tab === "mapa" ? (
+          <MapPanel
+            history={history}
+            lastGeo={deviceGeo}
+            onGeoUpdate={setDeviceGeo}
+          />
         ) : (
           <div className="grid grid-main">
-            <section className="card measure-card" id="measure-card">
-              <h2>Medición</h2>
+            <section
+              className={`card measure-card ${running ? "is-measuring" : ""}`}
+              id="measure-card"
+            >
+              <div className="measure-card-head">
+                <h2>Medición</h2>
+                <label className="reps-control" title="Repeticiones de la prueba">
+                  <span className="reps-label">×</span>
+                  <input
+                    type="number"
+                    className="reps-input"
+                    min={1}
+                    max={10}
+                    step={1}
+                    inputMode="numeric"
+                    value={reps}
+                    disabled={running}
+                    aria-label="Número de repeticiones"
+                    onChange={(e) => {
+                      const n = Math.min(
+                        10,
+                        Math.max(1, Number(e.target.value) || 1)
+                      );
+                      setReps(n);
+                    }}
+                  />
+                </label>
+              </div>
 
               <div className="gauge-wrap">
-                <div className="gauge">
+                <div className={`gauge ${running ? "gauge-active" : ""}`}>
+                  {running && (
+                    <>
+                      <span className="gauge-ripple r1" aria-hidden />
+                      <span className="gauge-ripple r2" aria-hidden />
+                      <span className="gauge-ripple r3" aria-hidden />
+                    </>
+                  )}
                   <div
                     className="gauge-ring"
                     style={{ ["--p" as string]: gaugePct }}
@@ -666,9 +790,13 @@ export function SpeedTestApp() {
                     <div className="gauge-unit">Mbps</div>
                     <div className="gauge-phase">
                       {running
-                        ? PHASE_LABEL[progress.phase]
+                        ? repProgress.total > 1
+                          ? `${PHASE_LABEL[progress.phase]} · ${repProgress.current}/${repProgress.total}`
+                          : PHASE_LABEL[progress.phase]
                         : result
-                          ? "Resultado (mediana bajada)"
+                          ? result.runTotal && result.runTotal > 1
+                            ? `Resultado · rep ${result.runIndex}/${result.runTotal}`
+                            : "Resultado (mediana bajada)"
                           : PHASE_LABEL[progress.phase]}
                     </div>
                   </div>
@@ -1179,7 +1307,7 @@ export function SpeedTestApp() {
         </div>
       )}
 
-      {/* Navegación inferior táctil */}
+      {/* Navegación inferior táctil: Medir | Mapa | Historial */}
       <nav className="bottom-nav mobile-only" aria-label="Navegación principal">
         <button
           type="button"
@@ -1190,6 +1318,16 @@ export function SpeedTestApp() {
             ◎
           </span>
           <span>Medir</span>
+        </button>
+        <button
+          type="button"
+          className={`bottom-nav-item bottom-nav-center ${tab === "mapa" ? "active" : ""}`}
+          onClick={() => setTab("mapa")}
+        >
+          <span className="bottom-nav-icon" aria-hidden>
+            ⌖
+          </span>
+          <span>Mapa</span>
         </button>
         <button
           type="button"
