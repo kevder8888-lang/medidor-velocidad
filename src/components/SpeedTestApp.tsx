@@ -28,6 +28,7 @@ import {
   accessKindLabel,
   categoryLabel,
   fetchIspMeta,
+  formatLocation,
   identifyFromMeta,
   mapAccessKind,
   suggestOperatorName,
@@ -341,37 +342,126 @@ export function SpeedTestApp() {
       ? result.download.samplesMbps
       : result?.download?.windowsMbps ?? [];
 
+  const ispPanel = (
+    <>
+      {android && (
+        <div className="android-tip" role="note">
+          <strong>Android:</strong>{" "}
+          {liveAccess === "cellular" ? (
+            <>
+              estás en <strong>datos móviles</strong> — el operador se estima por
+              IP (no por SIM). Cierra apps y deja la pantalla encendida.
+            </>
+          ) : liveAccess === "wifi" ? (
+            <>
+              estás en <strong>Wi‑Fi</strong> (ISP del hogar). Para medir y
+              detectar el operador móvil, desactiva Wi‑Fi y usa solo datos.
+            </>
+          ) : (
+            <>
+              cierra descargas y apps en segundo plano. Deja la pantalla encendida
+              (~30 s). Puedes «Añadir a pantalla de inicio».
+            </>
+          )}
+        </div>
+      )}
+
+      <section className="card isp-card" aria-live="polite">
+        <h2>Red e ISP detectados</h2>
+        {ispLoading && !liveIsp ? (
+          <p className="muted-p">Identificando IP pública y proveedor…</p>
+        ) : (
+          <>
+            <div className="isp-hero">
+              <div>
+                <div className="isp-label">
+                  {liveAccess === "cellular"
+                    ? "Operador estimado (datos móviles)"
+                    : liveAccess === "wifi"
+                      ? "ISP de la red Wi‑Fi"
+                      : "ISP / proveedor"}
+                </div>
+                <div className="isp-name">
+                  {liveIsp?.displayName ?? "No identificado"}
+                </div>
+                <div className="isp-sub">
+                  {liveIsp ? categoryLabel(liveIsp.category) : "Sin datos de ASN"}
+                  {liveIsp?.confidence
+                    ? ` · confianza ${liveIsp.confidence}`
+                    : ""}
+                </div>
+              </div>
+              <span
+                className={`pill ${
+                  liveAccess === "cellular"
+                    ? "media"
+                    : liveAccess === "wifi"
+                      ? "media"
+                      : "alta"
+                }`}
+              >
+                {accessKindLabel(liveAccess)}
+              </span>
+            </div>
+            <div className="kv">
+              <div className="kv-row">
+                <span className="k">Organización (ASN)</span>
+                <span className="v">
+                  {liveIsp?.organization || "—"}
+                  {liveIsp?.asn != null ? ` · AS${liveIsp.asn}` : ""}
+                </span>
+              </div>
+              <div className="kv-row">
+                <span className="k">IP pública</span>
+                <span className="v mono">{liveIsp?.clientIp || "—"}</span>
+              </div>
+              <div className="kv-row">
+                <span className="k">Ubicación aprox.</span>
+                <span className="v">
+                  {formatLocation(
+                    liveIsp?.city,
+                    liveIsp?.country,
+                    liveIsp?.colo
+                  )}
+                </span>
+              </div>
+            </div>
+            <p className="field-hint" style={{ marginTop: 10 }}>
+              {liveAccess === "cellular" ? (
+                <>
+                  En <strong>datos móviles</strong> el medidor estima el
+                  operador por la IP pública (ASN).{" "}
+                  <strong>No puede leer el nombre de la SIM</strong> desde el
+                  navegador (restricción de Android/Chrome).
+                </>
+              ) : liveAccess === "wifi" ? (
+                <>
+                  En <strong>Wi‑Fi</strong> se identifica el ISP del router
+                  (hogar/trabajo), <strong>no</strong> el operador de la SIM.
+                  Desactiva Wi‑Fi para medir y detectar la red móvil.
+                </>
+              ) : (
+                <>
+                  El ISP se obtiene de la IP pública. Si usas VPN, verás el
+                  proveedor de la VPN y no tu operador real.
+                </>
+              )}
+            </p>
+          </>
+        )}
+      </section>
+    </>
+  );
+
   return (
     <>
-      <BrandHeader />
+      <BrandHeader accessKind={liveAccess} />
       <div
         className={`app ${running ? "is-running" : ""} ${
           tab === "medir" ? "has-sticky-cta" : "no-sticky-cta"
         }`}
       >
-        {android && (
-          <div className="android-tip" role="note">
-            <strong>Android:</strong>{" "}
-            {liveAccess === "cellular" ? (
-              <>
-                estás en <strong>datos móviles</strong> — el operador se estima
-                por IP (no por SIM). Cierra apps y deja la pantalla encendida.
-              </>
-            ) : liveAccess === "wifi" ? (
-              <>
-                estás en <strong>Wi‑Fi</strong> (ISP del hogar). Para medir y
-                detectar el operador móvil, desactiva Wi‑Fi y usa solo datos.
-              </>
-            ) : (
-              <>
-                cierra descargas y apps en segundo plano. Deja la pantalla
-                encendida (~30 s). Puedes «Añadir a pantalla de inicio».
-              </>
-            )}
-          </div>
-        )}
-
-        <div className="meta-chips meta-chips-scroll" aria-label="Metadatos">
+        <div className="meta-chips meta-chips-scroll desktop-only" aria-label="Metadatos">
           <span className="chip">CVM {CVM_THRESHOLD_PCT}%</span>
           <span className="chip chip-isp">
             {ispLoading
@@ -381,95 +471,9 @@ export function SpeedTestApp() {
                 : "ISP: —"}
           </span>
           <span className="chip">{accessKindLabel(liveAccess)}</span>
-          <span className="chip desktop-only">{selectedServerLabel}</span>
+          <span className="chip">{selectedServerLabel}</span>
           <span className="chip">Historial: {history.length}</span>
         </div>
-
-        {/* Tarjeta ISP / operador (visible sin medir) */}
-        <section className="card isp-card" aria-live="polite">
-          <h2>Red e ISP detectados</h2>
-          {ispLoading && !liveIsp ? (
-            <p className="muted-p">Identificando IP pública y proveedor…</p>
-          ) : (
-            <>
-              <div className="isp-hero">
-                <div>
-                  <div className="isp-label">
-                    {liveAccess === "cellular"
-                      ? "Operador estimado (datos móviles)"
-                      : liveAccess === "wifi"
-                        ? "ISP de la red Wi‑Fi"
-                        : "ISP / proveedor"}
-                  </div>
-                  <div className="isp-name">
-                    {liveIsp?.displayName ?? "No identificado"}
-                  </div>
-                  <div className="isp-sub">
-                    {liveIsp
-                      ? categoryLabel(liveIsp.category)
-                      : "Sin datos de ASN"}
-                    {liveIsp?.confidence
-                      ? ` · confianza ${liveIsp.confidence}`
-                      : ""}
-                  </div>
-                </div>
-                <span
-                  className={`pill ${
-                    liveAccess === "cellular"
-                      ? "media"
-                      : liveAccess === "wifi"
-                        ? "media"
-                        : "alta"
-                  }`}
-                >
-                  {accessKindLabel(liveAccess)}
-                </span>
-              </div>
-              <div className="kv">
-                <div className="kv-row">
-                  <span className="k">Organización (ASN)</span>
-                  <span className="v">
-                    {liveIsp?.organization || "—"}
-                    {liveIsp?.asn != null ? ` · AS${liveIsp.asn}` : ""}
-                  </span>
-                </div>
-                <div className="kv-row">
-                  <span className="k">IP pública</span>
-                  <span className="v mono">{liveIsp?.clientIp || "—"}</span>
-                </div>
-                <div className="kv-row">
-                  <span className="k">Ubicación aprox.</span>
-                  <span className="v">
-                    {[liveIsp?.city, liveIsp?.country, liveIsp?.colo && `PoP ${liveIsp.colo}`]
-                      .filter(Boolean)
-                      .join(" · ") || "—"}
-                  </span>
-                </div>
-              </div>
-              <p className="field-hint" style={{ marginTop: 10 }}>
-                {liveAccess === "cellular" ? (
-                  <>
-                    En <strong>datos móviles</strong> el medidor estima el
-                    operador por la IP pública (ASN).{" "}
-                    <strong>No puede leer el nombre de la SIM</strong> desde el
-                    navegador (restricción de Android/Chrome).
-                  </>
-                ) : liveAccess === "wifi" ? (
-                  <>
-                    En <strong>Wi‑Fi</strong> se identifica el ISP del router
-                    (hogar/trabajo), <strong>no</strong> el operador de la SIM.
-                    Desactiva Wi‑Fi para medir y detectar la red móvil.
-                  </>
-                ) : (
-                  <>
-                    El ISP se obtiene de la IP pública. Si usas VPN, verás el
-                    proveedor de la VPN y no tu operador real.
-                  </>
-                )}
-              </p>
-            </>
-          )}
-        </section>
 
         {/* Tabs desktop; en móvil se usa bottom nav */}
         <div className="tabs tabs-desktop">
@@ -770,7 +774,10 @@ export function SpeedTestApp() {
               </div>
             </section>
 
-            <div className="grid">
+            {/* Debajo del medidor: tip Android + ISP (fija o móvil) */}
+            <div className="below-meter">{ispPanel}</div>
+
+            <div className="grid side-panel">
               <section className="card plan-card">
                 <button
                   type="button"

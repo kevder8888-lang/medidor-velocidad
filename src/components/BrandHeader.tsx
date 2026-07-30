@@ -1,6 +1,14 @@
 import { BRAND } from "@/lib/brand";
+import type { NetworkAccessKind } from "@/lib/isp";
+import { serviceModeLabel } from "@/lib/isp";
 
-export function BrandHeader() {
+export function BrandHeader({
+  accessKind = "unknown",
+}: {
+  accessKind?: NetworkAccessKind;
+}) {
+  const mode = serviceModeLabel(accessKind);
+
   return (
     <div className="brand-chrome">
       {/* Franja institucional gob.pe */}
@@ -59,12 +67,19 @@ export function BrandHeader() {
           <div className="inst-badges desktop-only">
             <span className="inst-badge">MVP regulatorio</span>
             <span className="inst-badge inst-badge-soft">CVM 70%</span>
+            <span className="inst-badge inst-badge-soft">{mode}</span>
           </div>
         </div>
         <p className="inst-tagline desktop-only">{BRAND.tagline}</p>
         <div className="inst-badges mobile-only inst-badges-mobile">
           <span className="inst-badge inst-badge-soft">CVM 70%</span>
-          <span className="inst-badge inst-badge-soft">Internet fija</span>
+          <span
+            className={`inst-badge inst-badge-soft ${
+              accessKind === "cellular" ? "inst-badge-mobile" : ""
+            }`}
+          >
+            {mode}
+          </span>
         </div>
       </header>
     </div>
