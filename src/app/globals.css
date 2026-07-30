@@ -2240,11 +2240,6 @@ html.is-honor .card {
   border-radius: 14px;
 }
 
-html.is-honor .brand-chrome + .app .card,
-html.is-honor .measure-card {
-  /* ok densificar solo cards de medición */
-}
-
 html.is-honor .gauge-wrap .gauge {
   width: min(252px, 72vw);
 }
