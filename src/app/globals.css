@@ -2394,20 +2394,52 @@ html.is-honor .map-frame-hero {
   max-height: 48dvh;
 }
 
-/* Xiaomi: sin zoom. Full-bleed suave sin centrar con calc (evita el mismo bug). */
+/*
+ * Xiaomi / HyperOS ONLY (Honor no tocar).
+ * En Medir el sticky-cta es position:fixed left/right:0 (borde a borde).
+ * El header en flujo a veces queda un pelín más angosto → se notan “orejas”
+ * a los lados solo en Medir. box-shadow extiende el COLOR sin cambiar width
+ * ni usar 100vw en el elemento (eso rompió Honor con zoom).
+ */
 html.is-xiaomi {
   zoom: normal !important;
+  overflow-x: clip;
 }
 
-html.is-xiaomi .brand-chrome,
-html.is-xiaomi .gov-topbar,
-html.is-xiaomi .inst-header-band {
+html.is-xiaomi body {
+  overflow-x: clip;
+  width: 100%;
+  max-width: 100%;
+}
+
+html.is-xiaomi .brand-chrome {
   width: 100% !important;
   max-width: none !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
   left: auto !important;
+  right: auto !important;
   box-sizing: border-box;
+  background: #fff;
+  /* extiende el fondo blanco del chrome hasta el viewport */
+  box-shadow: -100vw 0 0 #fff, 100vw 0 0 #fff;
+}
+
+html.is-xiaomi .gov-topbar {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box;
+  background-color: var(--peru-red);
+  /* franja roja de borde a borde (como sticky-cta / bottom-nav en Medir) */
+  box-shadow: -100vw 0 0 var(--peru-red), 100vw 0 0 var(--peru-red);
+}
+
+html.is-xiaomi .inst-header-band {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box;
+  background-color: #fff;
+  box-shadow: -100vw 0 0 #fff, 100vw 0 0 #fff;
 }
 
 html.is-xiaomi .gov-topbar-inner,
@@ -2417,9 +2449,17 @@ html.is-xiaomi .inst-header {
   box-sizing: border-box;
 }
 
-/* Barras fijas: ancladas al viewport (left/right 0), no a un width en px */
+/* Barras fijas Honor: sin cambios de layout problemáticos */
 html.is-honor .sticky-cta,
-html.is-honor .bottom-nav,
+html.is-honor .bottom-nav {
+  left: 0 !important;
+  right: 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  box-sizing: border-box;
+}
+
+/* Xiaomi: sticky + bottom-nav ya son fixed full-bleed; no forzar width en px */
 html.is-xiaomi .sticky-cta,
 html.is-xiaomi .bottom-nav {
   left: 0 !important;

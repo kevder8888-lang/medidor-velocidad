@@ -13,9 +13,9 @@ import {
 
 /**
  * Clases de dispositivo.
- * Honor (DNP-NX9, etc.): zoom global. NO forzar width del banner en px/vw
- * (con zoom se ve centrado y más corto por ambos lados).
- * Xiaomi (24129PN74G, etc.): sin zoom; limpia estilos inline del banner.
+ * Honor (DNP-NX9): zoom global. NO tocar anchos del banner (ya OK).
+ * Xiaomi (24129PN74G): sin zoom; full-bleed del banner solo por CSS
+ * (box-shadow en globals). Aquí solo se limpia basura inline de fixes viejos.
  */
 type UaData = {
   brands?: Array<{ brand: string; version: string }>;
@@ -47,7 +47,7 @@ export function DeviceClass() {
 
     root.classList.toggle("is-xiaomi", xiaomi);
     root.classList.toggle("is-honor", honor);
-    // Siempre limpiar restos del fix anterior (100vw / px)
+    // Quitar width/margin en px de fixes viejos (no reintroducir en Honor ni Xiaomi)
     clearBannerInlineStyles();
 
     let intervalId = 0;
