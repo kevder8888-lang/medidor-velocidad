@@ -2469,3 +2469,23 @@ html.is-xiaomi .bottom-nav {
   max-width: none !important;
   box-sizing: border-box;
 }
+
+/*
+ * Xiaomi: el contenido de las tarjetas (Medición, RED E ISP DETECTADOS...)
+ * dependía SOLO de @media (max-width) para pasar a una columna / envolver
+ * texto largo. El header ya no tiene este problema porque sus reglas van
+ * atadas a la clase .is-xiaomi (siempre se aplican); el contenido no tenía
+ * ese resguardo, así que en un Xiaomi donde el ancho evaluado por media
+ * query no coincide con el ancho real de pantalla, la grilla de 3
+ * columnas y las filas "etiqueta: valor" no se achicaban y quedaban
+ * cortadas por overflow-x:clip. Se fuerza por clase, igual que el header.
+ */
+html.is-xiaomi .metrics {
+  grid-template-columns: 1fr !important;
+}
+
+html.is-xiaomi .kv-row .k,
+html.is-xiaomi .kv-row .v {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
