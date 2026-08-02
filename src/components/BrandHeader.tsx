@@ -71,7 +71,6 @@ export function BrandHeader({
               <span className="inst-badge inst-badge-soft">{mode}</span>
             </div>
           </div>
-          <p className="inst-tagline desktop-only">{BRAND.tagline}</p>
           <div className="inst-badges mobile-only inst-badges-mobile">
             <span className="inst-badge inst-badge-soft">CVM 70%</span>
             <span

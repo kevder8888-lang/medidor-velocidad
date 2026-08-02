@@ -9,8 +9,8 @@ export function BrandFooter() {
           <img
             src={BRAND.assets.escudo}
             alt="Escudo del Perú"
-            width={36}
-            height={46}
+            width={22}
+            height={28}
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
