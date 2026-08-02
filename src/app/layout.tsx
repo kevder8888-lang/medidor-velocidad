@@ -66,7 +66,7 @@ export default function RootLayout({
           id="honor-ui-scale"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var ua=navigator.userAgent||"";var r=document.documentElement;var xm=/XiaoMi|Xiaomi|Redmi|POCO|MIUI|HyperOS|MiuiBrowser|24129PN74[CG]|24129PN74G/i.test(ua);var ho=!xm&&(/Honor|HONOR|Huawei|HUAWEI|HarmonyOS|MagicUI|MagicOS/i.test(ua)||/\\bDNP-NX9\\b|\\bFNE-(NX9|AN00|LX1)\\b|\\bCRT-(NX1|N09|LX1)\\b|\\bREA-(NX9|AN00)\\b|\\bANY-(NX1|LX1|AN00)\\b/i.test(ua));if(xm){r.classList.add("is-xiaomi");r.style.zoom="normal";}if(ho){var s="0.7";try{var k=sessionStorage.getItem("osiptel-honor-ui-scale");if(k&&+k>=0.55&&+k<=0.95)s=k;}catch(e){}r.classList.add("is-honor");r.style.setProperty("--honor-ui-scale",s);r.style.zoom=s;}var w=(window.visualViewport&&window.visualViewport.width)||window.innerWidth;if(w)r.style.setProperty("--app-width",Math.round(w)+"px");}catch(e){}})();`,
+            __html: `(function(){try{var ua=navigator.userAgent||"";var r=document.documentElement;var xm=/XiaoMi|Xiaomi|Redmi|POCO|MIUI|HyperOS|MiuiBrowser|24129PN74[CG]|24129PN74G/i.test(ua);var ho=!xm&&(/Honor|HONOR|Huawei|HUAWEI|HarmonyOS|MagicUI|MagicOS/i.test(ua)||/\\bDNP-NX9\\b|\\bFNE-(NX9|AN00|LX1)\\b|\\bCRT-(NX1|N09|LX1)\\b|\\bREA-(NX9|AN00)\\b|\\bANY-(NX1|LX1|AN00)\\b/i.test(ua));if(xm){r.classList.add("is-xiaomi");r.style.zoom="normal";}if(ho){var s="0.7";try{var k=sessionStorage.getItem("osiptel-honor-ui-scale");if(k&&+k>=0.55&&+k<=0.95)s=k;}catch(e){}r.classList.add("is-honor");r.style.setProperty("--honor-ui-scale",s);r.style.zoom=s;}r.style.removeProperty("--app-width");}catch(e){}})();`,
           }}
         />
         <DeviceClass />

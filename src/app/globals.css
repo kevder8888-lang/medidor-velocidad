@@ -2363,30 +2363,26 @@ html.is-honor .leaflet-container {
   box-sizing: border-box;
 }
 
-/* Encabezado: mismo full-bleed que sticky-cta y bottom-nav (Medir/Mapa/Admin). */
+/*
+ * Honor + zoom: NUNCA usar 100vw / margin calc / width en px.
+ * Con zoom en <html>, 100vw y visualViewport se desincronizan y el header
+ * queda centrado y más corto por ambos lados (bug reportado en Honor 400 Pro).
+ * Solo width:100% del body — igual que antes del fix fallido.
+ */
 html.is-honor .brand-chrome,
 html.is-honor .gov-topbar,
-html.is-honor .inst-header-band,
-html.is-xiaomi .brand-chrome,
-html.is-xiaomi .gov-topbar,
-html.is-xiaomi .inst-header-band {
-  width: var(--app-width, 100vw);
-  max-width: var(--app-width, 100vw);
+html.is-honor .inst-header-band {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  left: auto !important;
+  right: auto !important;
   box-sizing: border-box;
 }
 
-html.is-honor .brand-chrome,
-html.is-xiaomi .brand-chrome {
-  margin-left: calc(50% - (var(--app-width, 100vw) / 2));
-  margin-right: calc(50% - (var(--app-width, 100vw) / 2));
-  position: relative;
-  left: 0;
-}
-
 html.is-honor .gov-topbar-inner,
-html.is-honor .inst-header,
-html.is-xiaomi .gov-topbar-inner,
-html.is-xiaomi .inst-header {
+html.is-honor .inst-header {
   max-width: none;
   width: 100%;
   box-sizing: border-box;
@@ -2398,19 +2394,37 @@ html.is-honor .map-frame-hero {
   max-height: 48dvh;
 }
 
-/* Xiaomi: no tocar zoom (protege scroll MIUI) */
+/* Xiaomi: sin zoom. Full-bleed suave sin centrar con calc (evita el mismo bug). */
 html.is-xiaomi {
   zoom: normal !important;
 }
 
-/* Sticky CTA y bottom-nav: mismo ancho de referencia en Medir */
+html.is-xiaomi .brand-chrome,
+html.is-xiaomi .gov-topbar,
+html.is-xiaomi .inst-header-band {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  left: auto !important;
+  box-sizing: border-box;
+}
+
+html.is-xiaomi .gov-topbar-inner,
+html.is-xiaomi .inst-header {
+  max-width: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Barras fijas: ancladas al viewport (left/right 0), no a un width en px */
 html.is-honor .sticky-cta,
 html.is-honor .bottom-nav,
 html.is-xiaomi .sticky-cta,
 html.is-xiaomi .bottom-nav {
-  left: 0;
-  right: 0;
-  width: auto;
-  max-width: none;
+  left: 0 !important;
+  right: 0 !important;
+  width: auto !important;
+  max-width: none !important;
   box-sizing: border-box;
 }

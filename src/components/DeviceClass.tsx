@@ -12,10 +12,10 @@ import {
 } from "@/lib/honorScale";
 
 /**
- * Clases de dispositivo + full-bleed del banner.
- * - Honor (p.ej. DNP-NX9): zoom global + header al ancho del menú inferior.
- * - Xiaomi (p.ej. 24129PN74G): sin zoom (protege scroll); solo full-bleed.
- * El desfase se notaba sobre todo en Medir por el sticky-cta de borde a borde.
+ * Clases de dispositivo.
+ * Honor (DNP-NX9, etc.): zoom global. NO forzar width del banner en px/vw
+ * (con zoom se ve centrado y más corto por ambos lados).
+ * Xiaomi (24129PN74G, etc.): sin zoom; limpia estilos inline del banner.
  */
 type UaData = {
   brands?: Array<{ brand: string; version: string }>;
@@ -24,39 +24,18 @@ type UaData = {
   ) => Promise<{ model?: string; fullVersionList?: Array<{ brand: string }> }>;
 };
 
-function applyBannerBleed() {
+/** Quita anchos en px/vw que dejan el header centrado y corto (sobre todo con zoom Honor). */
+function clearBannerInlineStyles() {
   const chrome = document.querySelector<HTMLElement>(".brand-chrome");
   if (!chrome) return;
-
-  const root = document.documentElement;
-  const needsBleed =
-    root.classList.contains("is-xiaomi") || root.classList.contains("is-honor");
-
-  if (!needsBleed) {
-    chrome.style.removeProperty("width");
-    chrome.style.removeProperty("max-width");
-    chrome.style.removeProperty("margin-left");
-    chrome.style.removeProperty("margin-right");
-    chrome.style.removeProperty("left");
-    chrome.style.removeProperty("right");
-    chrome.style.removeProperty("position");
-    return;
-  }
-
-  // Mismo criterio que sticky-cta / bottom-nav: ancho del viewport visible
-  const vv = window.visualViewport;
-  const vw = Math.round(vv?.width ?? window.innerWidth);
-  const parentW = document.body.clientWidth || vw;
-  const shift = Math.round((parentW - vw) / 2);
-
-  chrome.style.boxSizing = "border-box";
-  chrome.style.position = "relative";
-  chrome.style.width = `${vw}px`;
-  chrome.style.maxWidth = `${vw}px`;
-  chrome.style.left = "0";
-  chrome.style.marginLeft = `${shift}px`;
-  chrome.style.marginRight = `${shift}px`;
-  root.style.setProperty("--app-width", `${vw}px`);
+  chrome.style.removeProperty("width");
+  chrome.style.removeProperty("max-width");
+  chrome.style.removeProperty("margin-left");
+  chrome.style.removeProperty("margin-right");
+  chrome.style.removeProperty("left");
+  chrome.style.removeProperty("right");
+  chrome.style.removeProperty("position");
+  document.documentElement.style.removeProperty("--app-width");
 }
 
 export function DeviceClass() {
@@ -68,27 +47,19 @@ export function DeviceClass() {
 
     root.classList.toggle("is-xiaomi", xiaomi);
     root.classList.toggle("is-honor", honor);
-    applyBannerBleed();
+    // Siempre limpiar restos del fix anterior (100vw / px)
+    clearBannerInlineStyles();
 
     let intervalId = 0;
     let reassertBound: (() => void) | null = null;
     let cancelled = false;
-    let raf = 0;
-    let ro: ResizeObserver | null = null;
-
-    const scheduleBleed = () => {
-      if (raf) return;
-      raf = window.requestAnimationFrame(() => {
-        raf = 0;
-        applyBannerBleed();
-      });
-    };
 
     const activateHonor = () => {
       if (cancelled || reassertBound) return;
       if (root.classList.contains("is-xiaomi")) return;
       root.classList.add("is-honor");
       honor = true;
+      clearBannerInlineStyles();
 
       let scale = readStoredHonorScale();
       if (scale === HONOR_SCALE_DEFAULT) {
@@ -116,11 +87,12 @@ export function DeviceClass() {
         }
       }
       applyHonorScale(scale);
-      applyBannerBleed();
+      clearBannerInlineStyles();
 
       reassertBound = () => {
         reassertHonorScale();
-        applyBannerBleed();
+        // Tras reassert de zoom, no reintroducir widths en px
+        clearBannerInlineStyles();
       };
 
       window.addEventListener("resize", reassertBound);
@@ -139,7 +111,7 @@ export function DeviceClass() {
       root.style.zoom = "normal";
       xiaomi = true;
       honor = false;
-      applyBannerBleed();
+      clearBannerInlineStyles();
     };
 
     if (honor) {
@@ -147,7 +119,6 @@ export function DeviceClass() {
     } else if (xiaomi) {
       activateXiaomi();
     } else {
-      // Client Hints: modelo real (24129PN74G / DNP-NX9) si el UA está reducido
       const uaData = (navigator as unknown as { userAgentData?: UaData })
         .userAgentData;
       const brands = (uaData?.brands ?? []).map((b) => b.brand).join(" ");
@@ -179,28 +150,15 @@ export function DeviceClass() {
     };
     narrow();
     window.addEventListener("resize", narrow);
-    window.addEventListener("resize", scheduleBleed);
-    window.visualViewport?.addEventListener("resize", scheduleBleed);
-    window.visualViewport?.addEventListener("scroll", scheduleBleed);
 
-    // Al cambiar Medir ↔ Mapa ↔ Admin el DOM del sticky-cta entra/sale
-    const mo = new MutationObserver(() => scheduleBleed());
+    // Si React remonta el header, quitar estilos inline residuales
+    const mo = new MutationObserver(() => clearBannerInlineStyles());
     mo.observe(document.body, { childList: true, subtree: true });
-
-    if (typeof ResizeObserver !== "undefined") {
-      ro = new ResizeObserver(() => scheduleBleed());
-      ro.observe(document.body);
-    }
 
     return () => {
       cancelled = true;
       window.removeEventListener("resize", narrow);
-      window.removeEventListener("resize", scheduleBleed);
-      window.visualViewport?.removeEventListener("resize", scheduleBleed);
-      window.visualViewport?.removeEventListener("scroll", scheduleBleed);
       mo.disconnect();
-      ro?.disconnect();
-      if (raf) window.cancelAnimationFrame(raf);
       if (reassertBound) {
         window.removeEventListener("resize", reassertBound);
         window.removeEventListener("pageshow", reassertBound);
