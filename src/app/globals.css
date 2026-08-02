@@ -267,12 +267,15 @@ h2.desktop-only {
   display: block;
 }
 
-/* ——— Brand chrome (web + Android, sin overrides por fabricante) ——— */
+/* ——— Brand chrome (mismo eje borde-a-borde que bottom-nav / sticky-cta) ——— */
 .brand-chrome {
   display: block;
   position: relative;
   width: 100%;
+  max-width: none;
   margin: 0 0 22px;
+  margin-left: 0;
+  margin-right: 0;
   padding: 0;
   box-sizing: border-box;
   background: #fff;
@@ -283,6 +286,7 @@ h2.desktop-only {
 .gov-topbar {
   display: block;
   width: 100%;
+  max-width: none;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -1267,6 +1271,18 @@ code {
 
   .brand-chrome {
     margin-bottom: 12px;
+    /* Igual que sticky-cta / bottom-nav: de borde a borde del viewport.
+       En Medir el CTA fijo hacía notar si el header quedaba más angosto. */
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .gov-topbar,
+  .inst-header-band {
+    width: 100%;
+    max-width: none;
   }
 
   .gov-topbar-inner {
@@ -2347,13 +2363,33 @@ html.is-honor .leaflet-container {
   box-sizing: border-box;
 }
 
-/* Encabezado (franja roja + franja blanca institucional): ancho completo,
-   igual que el menú inferior. Algunas MagicOS lo dejaban más angosto. */
+/* Encabezado: mismo full-bleed que sticky-cta y bottom-nav (Medir/Mapa/Admin). */
 html.is-honor .brand-chrome,
 html.is-honor .gov-topbar,
-html.is-honor .inst-header-band {
-  width: 100%;
+html.is-honor .inst-header-band,
+html.is-xiaomi .brand-chrome,
+html.is-xiaomi .gov-topbar,
+html.is-xiaomi .inst-header-band {
+  width: var(--app-width, 100vw);
+  max-width: var(--app-width, 100vw);
+  box-sizing: border-box;
+}
+
+html.is-honor .brand-chrome,
+html.is-xiaomi .brand-chrome {
+  margin-left: calc(50% - (var(--app-width, 100vw) / 2));
+  margin-right: calc(50% - (var(--app-width, 100vw) / 2));
+  position: relative;
+  left: 0;
+}
+
+html.is-honor .gov-topbar-inner,
+html.is-honor .inst-header,
+html.is-xiaomi .gov-topbar-inner,
+html.is-xiaomi .inst-header {
   max-width: none;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Mapa un poco más bajo en Honor para no empujar el bottom-nav */
@@ -2365,4 +2401,16 @@ html.is-honor .map-frame-hero {
 /* Xiaomi: no tocar zoom (protege scroll MIUI) */
 html.is-xiaomi {
   zoom: normal !important;
+}
+
+/* Sticky CTA y bottom-nav: mismo ancho de referencia en Medir */
+html.is-honor .sticky-cta,
+html.is-honor .bottom-nav,
+html.is-xiaomi .sticky-cta,
+html.is-xiaomi .bottom-nav {
+  left: 0;
+  right: 0;
+  width: auto;
+  max-width: none;
+  box-sizing: border-box;
 }

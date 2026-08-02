@@ -14,11 +14,28 @@ const STORAGE_KEY = "osiptel-honor-ui-scale";
  * reportan otros equipos (el modelo se puede pedir al usuario o leerse
  * desde navigator.userAgentData.getHighEntropyValues(["model"])).
  */
+/**
+ * Códigos de modelo (Chrome a menudo no envía la marca, solo esto).
+ * Honor 400 Pro MagicOS 10 → DNP-NX9
+ * Honor 70 y series previas → FNE / CRT / REA / ANY
+ */
 const HONOR_MODEL_CODES =
-  /\bFNE-(NX9|AN00|LX1)\b|\bCRT-(NX1|N09|LX1)\b|\bREA-(NX9|AN00)\b|\bANY-(NX1|LX1|AN00)\b/i;
+  /\bDNP-NX9\b|\bFNE-(NX9|AN00|LX1)\b|\bCRT-(NX1|N09|LX1)\b|\bREA-(NX9|AN00)\b|\bANY-(NX1|LX1|AN00)\b/i;
+
+/** Xiaomi 15 y variantes; HyperOS a menudo solo expone el código. */
+const XIAOMI_MODEL_CODES =
+  /\b24129PN74[CG]\b|\b24129PN74G\b|\b2410DPN6CC\b|\b24117RN76[LO]\b/i;
+
+export function isXiaomiUa(
+  ua = typeof navigator !== "undefined" ? navigator.userAgent : "",
+): boolean {
+  if (!ua) return false;
+  if (/XiaoMi|Xiaomi|Redmi|POCO|MIUI|HyperOS|MiuiBrowser/i.test(ua)) return true;
+  return XIAOMI_MODEL_CODES.test(ua);
+}
 
 export function isHonorUa(ua = typeof navigator !== "undefined" ? navigator.userAgent : ""): boolean {
-  if (/XiaoMi|Xiaomi|Redmi|POCO|MIUI|HyperOS/i.test(ua)) return false;
+  if (isXiaomiUa(ua)) return false;
   if (/Honor|HONOR|Huawei|HUAWEI|HarmonyOS|MagicUI|MagicOS/i.test(ua)) return true;
   return HONOR_MODEL_CODES.test(ua);
 }
@@ -53,9 +70,20 @@ export function storeHonorScale(scale: number): void {
  * síncrona: siempre se re-aplica al instante, por eso es el mecanismo
  * fiable para "reafirmar" tras cada cambio de vista.
  */
+function honorActive(): boolean {
+  if (typeof document !== "undefined" && document.documentElement.classList.contains("is-honor")) {
+    return true;
+  }
+  // Nunca en Xiaomi (aunque el modelo se haya marcado por Client Hints)
+  if (typeof document !== "undefined" && document.documentElement.classList.contains("is-xiaomi")) {
+    return false;
+  }
+  return isHonorUa();
+}
+
 export function applyHonorScale(scale?: number): void {
   if (typeof document === "undefined") return;
-  if (!isHonorUa()) return;
+  if (!honorActive()) return;
 
   const root = document.documentElement;
   const s = scale ?? readStoredHonorScale();
@@ -75,7 +103,7 @@ export function applyHonorScale(scale?: number): void {
 /** Reafirma el zoom si MagicOS lo quitó al cambiar de pestaña / mapa. */
 export function reassertHonorScale(): void {
   if (typeof document === "undefined") return;
-  if (!isHonorUa()) return;
+  if (!honorActive()) return;
   const root = document.documentElement;
   const expected = readStoredHonorScale();
   const current = Number(root.style.zoom) || 0;
