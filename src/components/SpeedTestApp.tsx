@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Gauge, History, MapPin, Settings } from "lucide-react";
 import { AggregatesPanel } from "@/components/AggregatesPanel";
-import { BrandFooter } from "@/components/BrandFooter";
 import { BrandHeader } from "@/components/BrandHeader";
 import { AdminPanel } from "@/components/AdminPanel";
 import { GpsConsentModal } from "@/components/GpsConsentModal";
@@ -1814,15 +1814,15 @@ export function SpeedTestApp() {
         </div>
       )}
 
-      {/* Navegación inferior: Medir | Mapa | Historial | Admin */}
-      <nav className="bottom-nav mobile-only" aria-label="Navegación principal">
+      {/* Navegación inferior — iconos Lucide (estándar familia OSIPTEL) */}
+      <nav className="bottom-nav" aria-label="Navegación principal">
         <button
           type="button"
           className={`bottom-nav-item ${tab === "medir" ? "active" : ""}`}
           onClick={() => goTab("medir")}
         >
           <span className="bottom-nav-icon" aria-hidden>
-            ◎
+            <Gauge className="nav-icon" strokeWidth={2.25} />
           </span>
           <span>Medir</span>
         </button>
@@ -1832,7 +1832,7 @@ export function SpeedTestApp() {
           onClick={() => goTab("mapa")}
         >
           <span className="bottom-nav-icon" aria-hidden>
-            ⌖
+            <MapPin className="nav-icon" strokeWidth={2.25} />
           </span>
           <span>Mapa</span>
         </button>
@@ -1842,9 +1842,9 @@ export function SpeedTestApp() {
           onClick={() => goTab("historial")}
         >
           <span className="bottom-nav-icon" aria-hidden>
-            ≡
+            <History className="nav-icon" strokeWidth={2.25} />
           </span>
-          <span>Local</span>
+          <span>Historial</span>
           {history.length > 0 && (
             <span className="bottom-nav-badge">{history.length}</span>
           )}
@@ -1855,13 +1855,11 @@ export function SpeedTestApp() {
           onClick={() => goTab("admin")}
         >
           <span className="bottom-nav-icon" aria-hidden>
-            ⚙
+            <Settings className="nav-icon" strokeWidth={2.25} />
           </span>
           <span>Admin</span>
         </button>
       </nav>
-
-      <BrandFooter />
     </>
   );
 }
